@@ -125,8 +125,10 @@ export function detectBuild(directory) {
   const preferred = ["build", "build:prod", "compile", "cep-build", "build:cep"];
   const script = preferred.find((name) => scripts[name]) || Object.keys(scripts).find((name) => /build/i.test(name)) || "";
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  const depNames = Object.keys(deps).join("\n");
+  const scriptText = Object.values(scripts).join("\n");
   let tool = "the project's compiler";
-  if (deps.vite || deps.nuxt) tool = "Vite";
+  if (deps.vite || deps.nuxt || /vite-cep/.test(depNames)) tool = "Vite";
   else if (deps.webpack || deps["webpack-cli"] || deps["bolt-cep"]) tool = "webpack";
   else if (deps["react-scripts"] || deps["create-cep-extension-scripts"]) tool = "the CEP build scripts";
   else if (deps["@angular/cli"] || deps["@angular/core"]) tool = "Angular";
@@ -138,7 +140,8 @@ export function detectBuild(directory) {
     script,
     command: script ? scripts[script] : "",
     tool,
-    viteCep: Boolean(deps["vite-cep"] || deps["@vite-cep"] || /vite-cep/.test(String(scripts[script] || "")))
+    usesTailwind: Boolean(deps.tailwindcss || deps["@tailwindcss/postcss"]),
+    viteCep: /vite-cep/.test(`${depNames}\n${scriptText}`)
   };
 }
 

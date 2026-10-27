@@ -36,7 +36,9 @@ Load the output folder with the UXP Developer Tool in the target host:
 5. Reloading the panel does not reset WebView state unexpectedly. `show()` must not assign `src` again; `mount` sets it once.
 6. Package a `.ccx` only after `host` is a single object.
 
-A white or gray WebView with a visible `sp-heading` means the shell loaded and the page crashed. Those errors are in the WebView inspector, not the UXP Developer Tool log. React 16 deletes `#root` when `componentDidMount` throws.
+A white panel means the shell loaded and the page did not paint. `OK` does not check this. With Spectrum, a visible `sp-heading` and an empty page means the page crashed. Those errors are in the WebView inspector, not the UXP Developer Tool log. React deletes the app node when startup throws, including a throw from `initBolt` or `initializeCEP` before `createRoot().render()`.
+
+`--design preserve` has no heading, so a white panel is the host background. The same blank page can be uncompiled `@tailwind` or `@apply` CSS, a `crossorigin` module script or stylesheet on `plugin:/`, or a WebView that was moved onto a panel root with no height. A `height="100%"` attribute is not enough after that move. Reloading the WebView does not reload `host-bridge.js`. Reload the plugin in the UXP Developer Tool.
 
 If the WebView stays blank, confirm UXP 8 or newer, `allowLocalRendering`, and that subresources are relative. If the host rejects `ame`, try `mediaencoder` and record that in the migration notes.
 

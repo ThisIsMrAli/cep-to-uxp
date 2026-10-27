@@ -303,6 +303,18 @@ function mount(root, options) {
     webview.setAttribute("height", "100%");
     if (root && root.appendChild) root.appendChild(webview);
   }
+  function fill(node) {
+    if (!node || !node.style) return;
+    node.style.width = "100%";
+    node.style.height = "100%";
+    node.style.display = "flex";
+    node.style.flex = "1 1 auto";
+    node.style.flexDirection = "column";
+    node.style.background = "#232323";
+  }
+  fill(root);
+  fill(webview);
+  webview.style.border = "none";
   webview.setAttribute("uxpAllowInspector", "true");
   if (src && !webview.__cepToUxpSrc) {
     webview.setAttribute("src", src);
@@ -407,8 +419,8 @@ export function renderShellHtml(panels, decision = {}) {
   <head>
     <meta charset="utf-8" />
     <style>
-      html, body { margin: 0; height: 100%; display: flex; flex-direction: column; }
-      webview { flex: 1; width: 100%; border: none; }
+      html, body { margin: 0; width: 100%; height: 100%; background: #232323; display: flex; flex-direction: column; }
+      webview { flex: 1 1 auto; width: 100%; height: 100%; border: none; background: #232323; }
       sp-heading { margin: 8px 12px; }
     </style>
   </head>
@@ -627,6 +639,7 @@ export function renderRetarget(scan) {
       ? "7. Premiere calls that match `host-premiere.js` should use that file: active project, sequences, `createSequence(name)`, frame size inside `executeTransaction`, and video track items. Do not call `createSequenceWithPresetPath` unless you have a `.sqpreset` path. Leave every other `evalTS` name as the uncovered line in `MIGRATION.md`."
       : "7. Readable host calls go in `host-handlers.js`. Unreadable JSX and unknown `evalTS` names stay uncovered.",
     "8. Reload the plugin in the UXP Developer Tool after changing `host-*.js`. Refreshing the WebView does not reload the host.",
+    "9. initBolt and initializeCEP must not throw when invokeSync is missing. The shim provides no-op invokeSync and invokeAsync. A throw before createRoot().render() leaves the app node empty and the panel white.",
     ""
   );
     if (layers.build?.script) {
@@ -636,7 +649,10 @@ export function renderRetarget(scan) {
         "Run it from `ui-src/` after the boundary edits, then copy the new HTML, CSS, and JS into `webview/`. Do not copy `node_modules`.",
         "The WebView must load that new bundle. Editing source while the panel still serves the old snapshot leaves every button dead.",
         layers.build.viteCep
-          ? "package.json uses vite-cep. Build the UXP page with a plain Vite config, not the CEP plugin. Inject cep-to-uxp-boot.js and cep-to-uxp-shim.js before the module script. Point index.html at the new hashed file and delete the previous one. The panel keeps serving the old file until you do."
+          ? "package.json uses a vite-cep plugin. Build the UXP page with a plain Vite config, not the CEP plugin. Inject cep-to-uxp-boot.js and cep-to-uxp-shim.js before the module script. Strip every crossorigin attribute. plugin:/ does not answer a CORS request, and crossorigin can block the script and the stylesheet. Point index.html at the new hashed file and delete the previous hashed bundle."
+          : "",
+        layers.build.usesTailwind
+          ? "The page uses Tailwind. Point css.postcss at the project's postcss.config.js. A stylesheet that still contains @tailwind or @apply was not compiled. The WebView ignores those at-rules and the panel stays white."
           : "",
         ""
       );
@@ -759,7 +775,7 @@ export function renderMigration(scan, decision, extras) {
     "- Messages are JSON values. Functions and DOM nodes do not survive the bridge.",
     ...(scan.renderGuard || scan.frameworks?.includes("react")
       ? [
-          "- A white or gray WebView with a visible sp-heading means the shell loaded and the page crashed. Those errors are in the WebView inspector, not the UXP Developer Tool log. React 16 deletes #root when componentDidMount throws."
+          "- A white panel means the shell loaded and the page did not paint. With Spectrum, a visible sp-heading and an empty page means the page crashed. Those errors are in the WebView inspector, not the UXP Developer Tool log. React deletes the app node when startup throws. The same white panel can be uncompiled @tailwind CSS, a crossorigin script on plugin:/, or a WebView moved onto a panel root with no height. The validator does not check those."
         ]
       : []),
     ""

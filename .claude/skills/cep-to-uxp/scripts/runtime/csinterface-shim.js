@@ -245,6 +245,17 @@
     },
     getExtensionId: function () {
       return new CSInterface().getExtensionID();
+    },
+    invokeSync: function () {
+      return "";
+    },
+    invokeAsync: function () {
+      for (var i = arguments.length - 1; i >= 0; i -= 1) {
+        if (typeof arguments[i] === "function") {
+          arguments[i]("");
+          return;
+        }
+      }
     }
   };
 

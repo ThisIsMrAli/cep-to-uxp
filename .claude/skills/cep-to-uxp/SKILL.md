@@ -11,7 +11,7 @@ license: MIT
 compatibility: Requires Node.js 18 or newer. Uses only the Node standard library.
 metadata:
   author: cep-to-uxp
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 # CEP to UXP
@@ -70,8 +70,17 @@ node scripts/validate-uxp.mjs --input /absolute/path/to/extension-uxp
 ```
 
 8. Tell the user every **uncovered** line in `MIGRATION.md` before anything else. A valid manifest does not mean those features work.
-9. If `RETARGET.md` exists, do that work before calling the port finished. Read the editable source, not the minified bundle. Keep the UI. Move every readable ExtendScript call and every Node call onto the host. Remote `fetch` from `plugin:/` is CORS-blocked; call `cepToUxp.http` so the host fetches it, and put the origin in `network.domains`. A local process or `listen()` is not a reason to stop: keep the tool names, run the ones the host can, and return the old error string for the rest. A cloud model that only returns text is not a substitute. Rebuild with the project's own script when `RETARGET.md` names one. If that script uses vite-cep, build with a plain Vite config and inject the boot script and the shim before the module. Point `index.html` at the new hashed file and delete the previous one. JSXBIN and any call whose body you cannot read stay explicit throws. Do not invent a host DOM for them. Reload the plugin in the UXP Developer Tool after `host-*.js` changes. A WebView refresh does not reload the host.
-10. The folder still has to be loaded in the UXP Developer Tool. "The panel opened" is not done. Done means each source call returns the old string from a handler, or it is still named as uncovered with the file that calls it.
+9. If `RETARGET.md` exists, do that work before calling the port finished. Read the editable source, not the minified bundle. Keep the UI. Move every readable ExtendScript call and every Node call onto the host. Remote `fetch` from `plugin:/` is CORS-blocked; call `cepToUxp.http` so the host fetches it, and put the origin in `network.domains`. A local process or `listen()` is not a reason to stop: keep the tool names, run the ones the host can, and return the old error string for the rest. A cloud model that only returns text is not a substitute. JSXBIN and any call whose body you cannot read stay explicit throws. Do not invent a host DOM for them.
+10. A white panel is not finished, even when `validate-uxp.mjs` prints `OK`. Before you tell the user it works, check all of these:
+
+- `vite-cep` and `vite-cep-plugin` need a plain Vite build, not the CEP plugin. Inject `cep-to-uxp-boot.js` and `cep-to-uxp-shim.js` before the module script.
+- Strip every `crossorigin` attribute. `plugin:/` does not answer a CORS request, so the script and the CSS never load.
+- If the page uses Tailwind, point `css.postcss` at the project's `postcss.config.js`. A CSS file that still contains `@tailwind` or `@apply` was not compiled. The WebView ignores those rules and the page stays white.
+- `initBolt` and `initializeCEP` run before React paints. The shim's `invokeSync` and `invokeAsync` return an empty string and must not throw. If the page still throws when they are missing, catch that error. A throw before `createRoot().render()` leaves the app node empty.
+- The shell gives the WebView a real height and a dark background after it is moved into the UXP panel root. Do not rely on `height="100%"` alone.
+- Point `index.html` at the new hashed bundle and delete the previous hashed files. Then reload the plugin in the UXP Developer Tool. Refreshing the WebView does not reload `host-*.js`.
+
+11. The folder still has to be loaded in the UXP Developer Tool. "The panel opened" is not done. Done means the page is visible, and each source call returns the old string from a handler or is still named as uncovered with the file that calls it.
 
 If you change the converter, run `npm test` from this skill directory and leave it passing.
 

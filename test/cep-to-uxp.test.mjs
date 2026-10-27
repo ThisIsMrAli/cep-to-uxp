@@ -12,6 +12,7 @@ import { extractDocFacts, mergeDocFacts } from "../.claude/skills/cep-to-uxp/scr
 import { mapCepHost } from "../.claude/skills/cep-to-uxp/scripts/lib/hosts.mjs";
 import { extractEvalScripts, extractFlyoutItems, frameworksFromSource, FRAMEWORK_PACKAGES, collectProcessCalls, processNeedsHybrid, scanCep } from "../.claude/skills/cep-to-uxp/scripts/lib/scan.mjs";
 import { selectManifestIcons } from "../.claude/skills/cep-to-uxp/scripts/lib/generate.mjs";
+import { detectBuild } from "../.claude/skills/cep-to-uxp/scripts/lib/layers.mjs";
 import { convertCep } from "../.claude/skills/cep-to-uxp/scripts/lib/convert.mjs";
 import { validatePlugin } from "../.claude/skills/cep-to-uxp/scripts/lib/validate.mjs";
 
@@ -796,6 +797,23 @@ test("a panel nested under dist is a snapshot, and rollover icons are not root i
   assert.equal(manifest.icons.length, 2);
   assert.equal(validatePlugin(out).ok, true, validatePlugin(out).errors.join("\n"));
   assert.match(fs.readFileSync(path.join(out, "RETARGET.md"), "utf8"), /plain Vite config/);
+  assert.match(fs.readFileSync(path.join(out, "RETARGET.md"), "utf8"), /invokeSync/);
+  assert.match(fs.readFileSync(path.join(out, "RETARGET.md"), "utf8"), /crossorigin/);
+  assert.match(fs.readFileSync(path.join(out, "index.html"), "utf8"), /#232323/);
+  assert.match(fs.readFileSync(path.join(out, "host-bridge.js"), "utf8"), /#232323/);
+  assert.match(fs.readFileSync(path.join(out, "webview/cep-to-uxp-shim.js"), "utf8"), /invokeSync/);
+  const pluginPkg = path.join(temp, "vite-cep-plugin-pkg");
+  fs.mkdirSync(pluginPkg, { recursive: true });
+  fs.writeFileSync(
+    path.join(pluginPkg, "package.json"),
+    JSON.stringify({
+      scripts: { build: "vite build" },
+      devDependencies: { "vite-cep-plugin": "1.0.0", tailwindcss: "3.4.0" }
+    })
+  );
+  const build = detectBuild(pluginPkg);
+  assert.equal(build.viteCep, true);
+  assert.equal(build.usesTailwind, true);
   assert.match(fs.readFileSync(path.join(out, "MIGRATION.md"), "utf8"), /other-panel/);
   const { decodeUtf8 } = require(path.join(skill, "scripts/runtime/host-http.cjs"));
   const pending = [];
