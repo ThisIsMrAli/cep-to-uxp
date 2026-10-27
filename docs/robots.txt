@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://thisismrali.github.io/cep-to-uxp/sitemap.xml

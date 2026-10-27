@@ -1,0 +1,32 @@
+{
+  "name": "cep-to-uxp",
+  "displayName": "CEP to UXP",
+  "description": "Converts legacy Adobe CEP and CSXS extensions into UXP plugins for Photoshop, InDesign, Premiere Pro, and Media Encoder. Keeps React, Vue, Svelte, Angular, Solid, Lit, and TypeScript UI in a WebView.",
+  "version": "1.4.0",
+  "author": "cep-to-uxp",
+  "license": "MIT",
+  "keywords": [
+    "cep",
+    "csxs",
+    "uxp",
+    "webview",
+    "photoshop",
+    "indesign",
+    "premiere",
+    "adobe",
+    "ai-skill"
+  ],
+  "platforms": [
+    "claude",
+    "cursor",
+    "codex",
+    "gemini",
+    "windsurf",
+    "copilot",
+    "opencode",
+    "continue",
+    "agents"
+  ],
+  "skillPath": ".claude/skills/cep-to-uxp",
+  "install": "npx skills add <owner>/cep-to-uxp --skill cep-to-uxp -a {{platform}}"
+}

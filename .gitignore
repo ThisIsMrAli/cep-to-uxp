@@ -1,0 +1,9 @@
+.DS_Store
+tmp/
+*.log
+node_modules/
+**/references/live/
+.env
+.env.*
+!.env.example
+!fixtures/**/.env

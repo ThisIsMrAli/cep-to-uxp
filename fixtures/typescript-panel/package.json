@@ -1,0 +1,7 @@
+{
+  "name": "ts-cep-fixture",
+  "private": true,
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "cep-to-uxp",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Agent skill that converts legacy Adobe CEP extensions into UXP plugins.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "scan": "node .claude/skills/cep-to-uxp/scripts/scan-cep.mjs",
+    "convert": "node .claude/skills/cep-to-uxp/scripts/convert.mjs",
+    "validate": "node .claude/skills/cep-to-uxp/scripts/validate-uxp.mjs",
+    "link-agents": "node install-agents.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.3"
+  }
+}

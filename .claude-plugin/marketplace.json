@@ -1,0 +1,25 @@
+{
+  "name": "cep-to-uxp",
+  "id": "cep-to-uxp",
+  "owner": {
+    "name": "cep-to-uxp"
+  },
+  "metadata": {
+    "description": "CEP to UXP migration skill for React, Vue, Svelte, Angular, TypeScript, and vanilla JavaScript panels.",
+    "version": "1.4.0"
+  },
+  "plugins": [
+    {
+      "name": "cep-to-uxp",
+      "source": "./",
+      "description": "Converts legacy Adobe CEP extensions into UXP plugins with a WebView bridge.",
+      "version": "1.4.0",
+      "author": {
+        "name": "cep-to-uxp"
+      },
+      "keywords": ["cep", "uxp", "webview", "photoshop", "adobe"],
+      "category": "development",
+      "strict": false
+    }
+  ]
+}

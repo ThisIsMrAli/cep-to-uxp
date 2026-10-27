@@ -1,0 +1,10 @@
+{
+  "name": "vue-cep-fixture",
+  "private": true,
+  "dependencies": {
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

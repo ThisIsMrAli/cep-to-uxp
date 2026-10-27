@@ -1,0 +1,18 @@
+# Spectrum
+
+Adobe's UXP UI guide says a plugin you ship should use Spectrum. There are two supported ways, and they are not interchangeable:
+
+| Kind | When the converter uses it | Setup |
+| --- | --- | --- |
+| Built-in Spectrum widgets | The loadable plugin shell: `sp-heading`, and dialogs opened with `uxpShowModal()` | None. These tags exist in the host. |
+| Spectrum Web Components | The `bolt/` starter, via `featureFlags.enableSWCSupport` | npm install, import each component, and a bundler. Premiere currently expects SWC `0.37.0` and `@swc-uxp-wrappers`. |
+
+The CEP page inside the WebView keeps its old CSS. Spectrum chrome is the UXP frame around it: heading, dialog, and buttons. `--design preserve` leaves that frame out.
+
+Do not put `sp-theme` on the loadable shell. Theme scoping belongs to Spectrum Web Components, which the shell does not bundle. Use host widgets there. Inside a bolt build, wrap new UI in `sp-theme` only after the SWC theme package is imported.
+
+Buttons: `variant="cta"` for the one main action, `primary` or `secondary` for the rest, `negative` for destructive actions.
+
+A modal CEP extension becomes a UXP command. Its dialog blocks the host until it closes. A normal CEP panel stays a docked UXP panel.
+
+References: https://developer.adobe.com/uxp/guides/explanation/fundamentals/user-interfaces/ and https://developer.adobe.com/uxp/uxp-api/reference-spectrum/
