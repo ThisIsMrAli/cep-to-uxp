@@ -9,12 +9,7 @@ const FRAMEWORKS = {
       return `import React from "react";
 
 export function App() {
-  return (
-    <main>
-      <h1>${escapeJsx(scan.bundle.name)}</h1>
-      <p>Bolt UXP starter. The original panel still loads from the plugin root.</p>
-    </main>
-  );
+  return <main id="cep-port-root" />;
 }
 `;
     }
@@ -30,7 +25,7 @@ const name = ${JSON.stringify(scan.bundle.name)};
 <template>
   <main>
     <h1>{{ name }}</h1>
-    <p>Bolt UXP starter. The original panel still loads from the plugin root.</p>
+    <p>Port the CEP screens from cep-src. Do not replace them with a smaller page.</p>
   </main>
 </template>
 `;
@@ -46,7 +41,7 @@ const name = ${JSON.stringify(scan.bundle.name)};
 
 <main>
   <h1>{name}</h1>
-  <p>Bolt UXP starter. The original panel still loads from the plugin root.</p>
+  <p>Port the CEP screens from cep-src. Do not replace them with a smaller page.</p>
 </main>
 `;
     }
@@ -96,18 +91,13 @@ export function writeBoltStarter(out, scan, decision, ui) {
   );
   fs.writeFileSync(
     path.join(root, "README.md"),
-    `# Bolt UXP starter
+    `# Bolt UXP port
 
-This folder is the new ${ui.replace("bolt-", "")} UI. It is not the plugin Premiere loads.
+This folder is the pure UXP UI. The parent folder is what the UXP Developer Tool loads. There is no WebView.
 
-The loadable plugin is the parent folder. Open that folder in the UXP Developer Tool.
+Read PORT.md. Clone every visible CEP screen from cep-src into src. Do not ship this starter as the product and do not drop controls the CEP panel showed.
 
-When you are ready to switch the panel UI to bolt-uxp:
-
-1. Read https://github.com/hyperbrew/bolt-uxp
-2. From this folder, install dependencies with npm.
-3. Keep manifest version 5 for Premiere unless the current Premiere UXP docs say otherwise.
-4. Move host calls out of \`../host-handlers.js\` into this UI only after the page no longer needs the WebView shim.
+Vite must keep build.modulePreload false. Premiere has no MutationObserver.
 
 Versions were taken from bolt-uxp's public template. If install fails, copy the current template's package.json from that repository.
 `

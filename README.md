@@ -73,7 +73,7 @@ Load the output folder in the [UXP Developer Tool](https://developer.adobe.com/p
 | `--ui` | When to use it | What gets written |
 | --- | --- | --- |
 | `native` | Suggested for a small static or vanilla page. | The CEP HTML is the UXP document. No WebView. A leftover `new CSInterface()` throws. |
-| `bolt-react` | Suggested for React, Preact, Angular, Solid, Lit, and similar stacks. | A bolt-uxp React starter in `bolt/`. Recreate the UI there. A copy of the old page stays loadable as a fallback. Dependencies are not installed. |
+| `bolt-react` | Suggested for React, Preact, Angular, Solid, Lit, and similar stacks. | A pure UXP document plus `bolt/cep-src/` to clone. No WebView folder. Dependencies are not installed. |
 | `bolt-vue` | Suggested for Vue or Nuxt. | A bolt-uxp Vue starter in `bolt/`. |
 | `bolt-svelte` | Suggested for Svelte. | A bolt-uxp Svelte starter in `bolt/`. |
 | `retarget` | Last resort: keep the existing UI in a WebView. | A loadable plugin, plus `ui-src/` and `RETARGET.md`. The agent separates ExtendScript and Node, rebuilds, and points the WebView at the new bundle. |

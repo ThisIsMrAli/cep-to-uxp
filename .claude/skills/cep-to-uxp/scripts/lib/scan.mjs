@@ -52,6 +52,17 @@ const NODE_BUILTINS = new Set([
   "module",
   "process"
 ]);
+export function extractEvalTsNames(text) {
+  const code = String(text)
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+  const names = new Set();
+  for (const match of code.matchAll(/\bevalTS\s*\(\s*(['"`])([^'"`\n]{1,160})\1/g)) {
+    names.add(match[2]);
+  }
+  return [...names].sort();
+}
+
 export const FRAMEWORK_PACKAGES = {
   react: "react",
   "react-dom": "react",
@@ -589,9 +600,7 @@ export function scanCep(input) {
     for (const script of scripts.dynamic) {
       if (!dynamicEvalScripts.includes(script)) dynamicEvalScripts.push(script);
     }
-    for (const match of text.matchAll(/\bevalTS\s*\(\s*(['"`])([^'"`\n]{1,160})\1/g)) {
-      evalTsNames.add(match[2]);
-    }
+    for (const name of extractEvalTsNames(text)) evalTsNames.add(name);
     for (const [pattern, label] of NOTABLE_CALLS) {
       if (pattern.test(text)) notableCalls.add(label);
     }

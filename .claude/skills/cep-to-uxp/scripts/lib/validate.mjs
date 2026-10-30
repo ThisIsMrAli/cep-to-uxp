@@ -67,7 +67,9 @@ export function validatePlugin(dir) {
     if (!migration.includes(script)) errors.push(`MIGRATION.md does not list evalScript ${script}`);
   }
 
-  if (strategy === "native") validateNative(root, manifest, [...panels, ...commands], errors);
+  const ui = report.ui || "";
+  if (ui.startsWith("bolt-")) validateBolt(root, manifest, errors);
+  else if (strategy === "native" || ui === "native") validateNative(root, manifest, [...panels, ...commands], errors);
   else validateWebview(root, manifest, report, scripts, strategy, errors, warnings);
 
   for (const file of ["index.js", "host-bridge.js", "host-bridge-core.js", "host-handlers.js", "host-http.js", "host-premiere.js", "cep-to-uxp-entry.js"]) {
@@ -118,6 +120,29 @@ function checkIcons(manifest, errors) {
       if (seen.has(theme)) errors.push(`Two manifest icons use the theme ${theme}.`);
       seen.add(theme);
     }
+  }
+}
+
+function validateBolt(root, manifest, errors) {
+  if (manifest.requiredPermissions?.webview) errors.push("A bolt plugin must not request WebView permission");
+  if (fs.existsSync(path.join(root, "webview"))) errors.push("A bolt plugin must not include a webview folder");
+  const html = manifest.main && fs.existsSync(path.join(root, manifest.main))
+    ? fs.readFileSync(path.join(root, manifest.main), "utf8")
+    : "";
+  if (html.includes("<webview")) errors.push("A bolt plugin must not contain a <webview> element");
+  const plan = path.join(root, "bolt", "PORT.md");
+  if (!fs.existsSync(plan)) errors.push("bolt/PORT.md is missing");
+  else if (!fs.readFileSync(plan, "utf8").includes("Do not drop a visible control")) {
+    errors.push("bolt/PORT.md must keep every visible CEP control");
+  }
+  const entry = path.join(root, "cep-to-uxp-entry.js");
+  if (!fs.existsSync(entry) || !fs.readFileSync(entry, "utf8").includes("entrypoints.setup")) {
+    errors.push("Bolt output is missing cep-to-uxp-entry.js");
+  }
+  if (!fs.existsSync(path.join(root, "bolt", "cep-src"))) errors.push("bolt/cep-src is missing");
+  const vite = path.join(root, "bolt", "vite.config.ts");
+  if (!fs.existsSync(vite) || !fs.readFileSync(vite, "utf8").includes("modulePreload: false")) {
+    errors.push("bolt/vite.config.ts must set modulePreload to false");
   }
 }
 

@@ -10,10 +10,11 @@ import { classifyDomain, extractOrigins, withCompanionOrigins } from "../.claude
 import { buildCoverage } from "../.claude/skills/cep-to-uxp/scripts/lib/coverage.mjs";
 import { extractDocFacts, mergeDocFacts } from "../.claude/skills/cep-to-uxp/scripts/lib/docs.mjs";
 import { mapCepHost } from "../.claude/skills/cep-to-uxp/scripts/lib/hosts.mjs";
-import { extractEvalScripts, extractFlyoutItems, frameworksFromSource, FRAMEWORK_PACKAGES, collectProcessCalls, processNeedsHybrid, scanCep } from "../.claude/skills/cep-to-uxp/scripts/lib/scan.mjs";
+import { extractEvalScripts, extractEvalTsNames, extractFlyoutItems, frameworksFromSource, FRAMEWORK_PACKAGES, collectProcessCalls, processNeedsHybrid, scanCep } from "../.claude/skills/cep-to-uxp/scripts/lib/scan.mjs";
 import { selectManifestIcons } from "../.claude/skills/cep-to-uxp/scripts/lib/generate.mjs";
 import { detectBuild } from "../.claude/skills/cep-to-uxp/scripts/lib/layers.mjs";
 import { convertCep } from "../.claude/skills/cep-to-uxp/scripts/lib/convert.mjs";
+import { missingLabels, visibleStrings } from "../.claude/skills/cep-to-uxp/scripts/lib/inventory.mjs";
 import { suggestUi } from "../.claude/skills/cep-to-uxp/scripts/lib/decide.mjs";
 import { validatePlugin } from "../.claude/skills/cep-to-uxp/scripts/lib/validate.mjs";
 
@@ -380,12 +381,30 @@ test("convert CLI requires --ui and does not pick a mode", () => {
   assert.match(result.stderr, /--ui/);
 });
 
-test("bolt-react adds a starter without replacing the loadable plugin", () => {
+test("UI inventory flags a CEP label the UXP page dropped", () => {
+  const cep = visibleStrings('<button>Credits</button><input placeholder="Describe what you want to happen..." />');
+  const uxp = visibleStrings("<button>Send</button>");
+  assert.deepEqual(missingLabels(cep, uxp), ["Credits", "Describe what you want to happen..."]);
+  assert.deepEqual(missingLabels(cep, visibleStrings(`${cep.map((label) => `<span>${label}</span>`).join("")}`)), []);
+});
+
+test("commented evalTS examples are not product features", () => {
+  const names = extractEvalTsNames("// evalTS(\"myFunc\")\nexport function run(){ evalTS('gemoInspect'); }\n");
+  assert.deepEqual(names, ["gemoInspect"]);
+});
+
+test("bolt-react is a pure UXP port and does not write a WebView", () => {
   const out = path.join(temp, "bolt");
   const result = convertCep({ input: fixture("vanilla-js"), out, force: true, ui: "bolt-react" });
   assert.equal(result.report.ui, "bolt-react");
   assert.equal(result.report.strategy, "webview");
+  assert.equal(fs.existsSync(path.join(out, "webview")), false);
+  assert.equal(fs.readFileSync(path.join(out, "index.html"), "utf8").includes("<webview"), false);
+  assert.equal(result.report.decision.permissions.webview, undefined);
   assert.equal(fs.existsSync(path.join(out, "bolt/src/main.tsx")), true);
+  assert.equal(fs.existsSync(path.join(out, "bolt/cep-src/index.html")), true);
+  assert.match(fs.readFileSync(path.join(out, "bolt/PORT.md"), "utf8"), /Do not drop a visible control/);
+  assert.match(fs.readFileSync(path.join(out, "bolt/vite.config.ts"), "utf8"), /modulePreload: false/);
   assert.equal(fs.existsSync(path.join(out, "package.json")), false);
   const pkg = readJson(path.join(out, "bolt/package.json"));
   assert.ok(pkg.dependencies.react);

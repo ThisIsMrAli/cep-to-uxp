@@ -680,8 +680,8 @@ function retargetLines(scan, decision, extras) {
     return [
       "## UI path",
       ui === "native"
-        ? "This plugin is native UXP HTML. There is no WebView. Recreate host calls in the UXP document. A leftover `new CSInterface()` throws."
-        : `This plugin uses ${ui}. Recreate the UI in \`bolt/\` as Spectrum UXP. The copied CEP page is a fallback only, not the default shipped UI.`,
+        ? "This plugin is native UXP HTML. There is no WebView. Clone the CEP screens into the UXP document. Do not drop a visible control. A leftover `new CSInterface()` throws."
+        : `This plugin uses ${ui}. Clone the CEP screens from \`bolt/cep-src\` into \`bolt/src\`. Same regions, labels, prompts, and controls. There is no WebView product. Do not drop a visible control. If a handler cannot run, keep the control and return the old error string.`,
       ""
     ];
   }
@@ -751,8 +751,9 @@ export function renderMigration(scan, decision, extras) {
     ...(extras.ui && String(extras.ui).startsWith("bolt-")
       ? [
           "## New UI",
-          `A ${extras.ui} starter is in \`bolt/\`. The plugin root is still the loadable WebView port.`,
-          "Install the bolt-uxp toolchain from https://github.com/hyperbrew/bolt-uxp before running the starter. The starter is not a second manifest.",
+          `A ${extras.ui} port lives in \`bolt/\`. The loadable document is the parent index.html. It has no WebView.`,
+          "Read `bolt/PORT.md`. Clone the CEP screens from `bolt/cep-src`. Do not replace them with a smaller page.",
+          "Install dependencies in `bolt/` before building. Keep `build.modulePreload` false.",
           ""
         ]
       : []),

@@ -12,7 +12,7 @@ license: MIT
 compatibility: Requires Node.js 18 or newer. Uses only the Node standard library.
 metadata:
   author: cep-to-uxp
-  version: "1.6.0"
+  version: "1.7.0"
 ---
 
 # CEP to UXP
@@ -88,7 +88,18 @@ node scripts/validate-uxp.mjs --input /absolute/path/to/extension-uxp
 ```
 
 8. Tell the user every **uncovered** line in `MIGRATION.md` before anything else. A valid manifest does not mean those features work.
-9. If the user chose `native` or `bolt-*`, recreate the UI on that path. Host work still belongs in UXP handlers. Do not treat a leftover WebView copy as the product they asked for.
+9. If the user chose `native` or `bolt-*`, clone the CEP UI. This is a pure UXP port, not a new smaller panel.
+
+- Read `bolt/PORT.md` and the screens in `bolt/cep-src/` (or the CEP `src/` next to a built snapshot). Port every visible region: header actions, credits, history, menus, suggestion cards, chips, composer, attachments, and empty-state copy.
+- Keep the same labels and prompts. Do not rewrite an edit command into "describe the edit."
+- Spectrum is the widget set when a control is rewritten. It is not permission to delete a control.
+- If the handler cannot perform the action (`evalScript`, JSX, `child_process`, `listen()`), the control stays and the click returns the old error string.
+- Do not ship the bolt starter paragraph as the product. Do not design the page around only the host reads you have implemented.
+- The converter does not write a `webview/` folder for this path. Do not add one. Do not put `<webview>` in `index.html`, even commented out. Do not point manifest icons at `webview/`.
+- A hybrid scan is not a reason to keep the old page as the panel. Node that only loads when `window.cep` exists does not make the product a WebView.
+- A name that appears only in a comment, such as `evalTS("myFunc")` in a bolt example, is not a feature. List the real host functions you can read.
+- Premiere has no `MutationObserver`. Keep `build.modulePreload: false` and an iife bundle. Vite's modulepreload polyfill throws `MutationObserver is not defined` and the panel never paints.
+- Do not pass `value` as a React prop on `sp-textfield`, `sp-picker`, or `sp-menu-item`. In Premiere those properties are getter-only and React throws `Cannot set property value`. Set `value` and `selected` with `setAttribute`.
 10. If `RETARGET.md` exists, the user chose a WebView path. Do that work before calling the port finished. Read the editable source, not the minified bundle. Keep the UI. Move every readable ExtendScript call and every Node call onto the host. Remote `fetch` from `plugin:/` is CORS-blocked; call `cepToUxp.http` so the host fetches it, and put the origin in `network.domains`. A local process or `listen()` is not a reason to stop: keep the tool names, run the ones the host can, and return the old error string for the rest. A cloud model that only returns text is not a substitute. JSXBIN and any call whose body you cannot read stay explicit throws. Do not invent a host DOM for them.
 11. A white panel is not finished, even when `validate-uxp.mjs` prints `OK`. Before you tell the user it works, check all of these when a WebView is in use:
 
@@ -99,7 +110,19 @@ node scripts/validate-uxp.mjs --input /absolute/path/to/extension-uxp
 - The shell gives the WebView a real height and a dark background after it is moved into the UXP panel root. Do not rely on `height="100%"` alone.
 - Point `index.html` at the new hashed bundle and delete the previous hashed files. Then reload the plugin in the UXP Developer Tool. Refreshing the WebView does not reload `host-*.js`.
 
-12. The folder still has to be loaded in the UXP Developer Tool. "The panel opened" is not done. Done means the page is visible, and each source call returns the old string from a handler or is still named as uncovered with the file that calls it.
+12. Check the UI before you call it done. A painted panel can still be the wrong screen.
+
+Words:
+
+```bash
+node scripts/inventory-ui.mjs --cep /absolute/path/to/cep-src --uxp /absolute/path/to/extension-uxp/bolt/src
+```
+
+For a WebView port, point `--uxp` at `webview/` or `ui-src/`. Exit 1 means a visible CEP label is missing. Put it back, or name it in `MIGRATION.md` with the file that showed it. Do not drop it because the handler cannot run.
+
+Layout: the inventory does not see spacing, cards, or a missing column. Premiere cannot be opened from this skill. After the labels match, look at the page. Build the panel and open that HTML in a browser when it does not require `require("uxp")` at import time. Otherwise ask the user for a screenshot of the UXP panel next to the CEP panel. Compare header, suggestion cards, chips, and the composer. Do not say the UI matches until that picture does.
+
+13. The folder still has to be loaded in the UXP Developer Tool. "The panel opened" is not done. Done means the page is visible, the inventory has no unexplained missing labels, the screenshot matches the CEP layout, and each source call returns the old string from a handler or is still named as uncovered with the file that calls it.
 
 If you change the converter, run `npm test` from this skill directory and leave it passing.
 
@@ -114,7 +137,7 @@ The scanner reports how the CEP page is built. That report is not a UI choice. Y
 | `native` | No framework, Node, or CEP bridge was found, so HTML can be the UXP document. Still ask. |
 | `blocked` | Report only. |
 
-`--ui native` writes UXP HTML and no WebView. `--ui bolt-*` writes a Spectrum starter in `bolt/` and keeps a loadable copy of the old page as a fallback. `--ui retarget` is a WebView plus `ui-src/` and `RETARGET.md`. `--ui keep` only copies the current page.
+`--ui native` writes UXP HTML and no WebView. `--ui bolt-*` writes a pure UXP document plus `bolt/cep-src/` to clone. It does not write a `webview/` folder. `--ui retarget` is a WebView plus `ui-src/` and `RETARGET.md`. `--ui keep` only copies the current page.
 
 Recognize source by its files and package, not by one folder name: `src/`, `app/`, `frontend/`, `.vue`, `.svelte`, `.tsx`, `.ts`, and a `package.json` build script. A directory named `build/`, `dist/`, `out/`, or `release/` is a snapshot. When both exist, read the source. Read [references/decision.md](references/decision.md) before overriding the scanner.
 

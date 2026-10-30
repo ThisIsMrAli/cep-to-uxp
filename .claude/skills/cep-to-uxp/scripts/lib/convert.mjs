@@ -79,9 +79,9 @@ export function convertCep(options) {
     size: extension.size || { width: 480, height: 360 }
   }));
 
-  if (decision.strategy === "native") writeNative(scan, decision, out, panels);
+  if (ui.startsWith("bolt-")) writeBoltProduct(scan, decision, out, panels, ui);
+  else if (decision.strategy === "native" || ui === "native") writeNative(scan, decision, out, panels);
   else writeWebview(scan, decision, out, panels);
-  if (ui.startsWith("bolt-")) writeBoltStarter(out, scan, decision, ui);
   if (ui === "retarget") writeRetarget(scan, out);
 
   const report = { strategy: decision.strategy, ui, panels, scan, decision };
@@ -127,6 +127,106 @@ function writeRetarget(scan, out) {
     const src = path.join(scan.layers.projectRoot, name);
     if (!fs.existsSync(src) || !fs.statSync(src).isFile()) continue;
     fs.copyFileSync(src, path.join(out, "ui-src", name));
+  }
+}
+
+function writeBoltProduct(scan, decision, out, panels, ui) {
+  if (decision.permissions) delete decision.permissions.webview;
+  const pure = decision;
+  copySourceForPort(scan, path.join(out, "bolt", "cep-src"));
+  copyIcons(scan, out);
+  writeBoltStarter(out, scan, pure, ui);
+  fs.writeFileSync(path.join(out, "bolt", "PORT.md"), renderPortPlan(scan, ui));
+  fs.writeFileSync(path.join(out, "bolt", "vite.config.ts"), viteUxpConfig());
+  fs.writeFileSync(path.join(out, "cep-to-uxp-entry.js"), renderNativeEntry(panels, decision.flyoutItems));
+  fs.writeFileSync(path.join(out, "index.html"), renderPureHtml());
+  copyLegacy(scan, out);
+  fs.writeFileSync(path.join(out, "host-http.js"), readRuntime("host-http.cjs"));
+  if (decision.hosts.some((host) => host.app === "premierepro")) {
+    fs.writeFileSync(path.join(out, "host-premiere.js"), readRuntime("host-premiere.cjs"));
+  }
+  fs.writeFileSync(path.join(out, "host-handlers.js"), renderHandlers(scan.evalScripts));
+  fs.writeFileSync(path.join(out, "manifest.json"), renderManifest(scan, pure, out, "", "index.html"));
+}
+
+function renderPureHtml() {
+  return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html, body, #root { margin: 0; width: 100%; height: 100%; background: #1e1e1e; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="cep-to-uxp-entry.js"></script>
+  </body>
+</html>
+`;
+}
+
+function viteUxpConfig() {
+  return `import { defineConfig } from "vite";
+
+export default defineConfig({
+  build: {
+    modulePreload: false,
+    rollupOptions: {
+      output: {
+        format: "iife",
+        inlineDynamicImports: true
+      }
+    }
+  }
+});
+`;
+}
+
+function renderPortPlan(scan, ui) {
+  return `# Port ${scan.bundle.name}
+
+This is a pure UXP ${ui} plugin. There is no WebView folder and index.html has no <webview>.
+
+Do not drop a visible control.
+
+Clone the CEP screens in \`cep-src/\` into \`src/\`. Same regions, labels, prompts, empty states, menus, chips, composers, and actions. Spectrum widgets may replace a control the user asked to restyle. They are not a reason to delete credits, history, a model menu, suggestion cards, or the composer.
+
+If a click cannot run in UXP (ExtendScript, a spawned process, or a listening port), keep the control. The click returns the old error string. Do not rewrite prompt copy so the action only "describes" the edit.
+
+Premiere has no MutationObserver. The Vite config sets \`build.modulePreload\` to false and emits an iife bundle. Do not turn modulepreload back on.
+
+Do not pass \`value\` as a React prop to \`sp-textfield\`, \`sp-picker\`, or \`sp-menu-item\`. Those properties are getter-only in Premiere. Set \`value\` and \`selected\` with \`setAttribute\`.
+
+A name that appears only inside a comment, such as an \`evalTS("myFunc")\` example, is not a product feature. Name the real host functions you can read.
+
+Do not point manifest icons at \`webview/\`. This plugin does not have that folder.
+`;
+}
+
+function copySourceForPort(scan, dest) {
+  const roots = scan.layers?.sourceRoots || [];
+  const extraSkip = new Set(["build", "dist", "out", "output", "release", "coverage", "webview", "node_modules"]);
+  if (!roots.length) {
+    copyTree(scan.input, dest, extraSkip);
+    return;
+  }
+  for (const sourceRoot of roots) {
+    const destName = roots.length === 1 && path.resolve(sourceRoot) === path.resolve(scan.input) ? "." : path.basename(sourceRoot);
+    copyTree(sourceRoot, destName === "." ? dest : path.join(dest, destName), extraSkip);
+  }
+}
+
+function copyIcons(scan, out) {
+  for (const extension of scan.extensions) {
+    for (const icon of extension.icons || []) {
+      if (!icon.path) continue;
+      const src = path.join(scan.input, icon.path);
+      if (!fs.existsSync(src) || !fs.statSync(src).isFile()) continue;
+      const dest = path.join(out, icon.path);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.copyFileSync(src, dest);
+    }
   }
 }
 

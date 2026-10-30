@@ -1,6 +1,8 @@
 # React and other bundled panels
 
-Vue, Svelte, Angular, Solid, Lit, and TypeScript follow the same rule as React: keep the existing UI in the WebView and load its built JavaScript. Stack-by-stack notes are in [stacks.md](stacks.md).
+If the user chose `bolt-*` or `native`, do not follow the WebView steps below. Clone the existing screens into the pure UXP app. Same regions, labels, and prompts. Do not drop a visible control. Read `bolt/PORT.md`.
+
+Vue, Svelte, Angular, Solid, Lit, and TypeScript follow the same rule as React when the user chose a WebView: keep the existing UI in the WebView and load its built JavaScript. Stack-by-stack notes are in [stacks.md](stacks.md).
 
 ## What the converter does
 
