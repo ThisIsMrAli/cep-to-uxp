@@ -14,6 +14,23 @@ const HYBRID_BUILTINS = new Set([
 
 const FILE_BUILTINS = new Set(["fs", "path", "os"]);
 
+export function suggestUi(scan) {
+  const frameworks = scan.frameworks || [];
+  if (frameworks.includes("vue") || frameworks.includes("nuxt")) return "bolt-vue";
+  if (frameworks.includes("svelte")) return "bolt-svelte";
+  if (
+    frameworks.includes("react") ||
+    frameworks.includes("preact") ||
+    frameworks.includes("angular") ||
+    frameworks.includes("solid") ||
+    frameworks.includes("lit")
+  ) {
+    return "bolt-react";
+  }
+  if (frameworks.length > 0) return "bolt-react";
+  return "native";
+}
+
 export function decide(scan, options = {}) {
   const supported = dedupeSupported(scan.hosts);
   const blockedHosts = scan.hosts.filter((host) => host.status !== "supported");

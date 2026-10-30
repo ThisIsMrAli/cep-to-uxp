@@ -3,22 +3,31 @@ name: cep-to-uxp
 description: >-
   Converts legacy Adobe CEP and CSXS extensions into UXP plugins for Photoshop,
   InDesign, Premiere Pro, and Media Encoder. Handles React, Vue, Svelte, Angular,
-  Solid, Lit, Alpine, TypeScript, and vanilla JavaScript. Retarget keeps the
-  existing UI in a WebView and moves ExtendScript and Node onto the UXP host.
-  Use when the user mentions CEP, CSXS, CSInterface, evalScript, ExtendScript
-  panels, manifest.xml, ZXP, bolt-cep, or migrating an Adobe panel to UXP or WebView.
+  Solid, Lit, Alpine, TypeScript, and vanilla JavaScript. Always ask the user
+  which UI path to take. Prefer native UXP HTML or a bolt Spectrum starter.
+  WebView is last resort. Use when the user mentions CEP, CSXS, CSInterface,
+  evalScript, ExtendScript panels, manifest.xml, ZXP, bolt-cep, or migrating an
+  Adobe panel to UXP.
 license: MIT
 compatibility: Requires Node.js 18 or newer. Uses only the Node standard library.
 metadata:
   author: cep-to-uxp
-  version: "1.5.0"
+  version: "1.6.0"
 ---
 
 # CEP to UXP
 
-Convert a CEP extension into a new UXP plugin directory. Do not modify the CEP source. The converter preserves an existing React, Vue, Svelte, Angular, Solid, Lit, TypeScript, or vanilla JavaScript page inside a UXP WebView. It does not execute ExtendScript and it does not compile source files.
+Convert a CEP extension into a new UXP plugin directory. Do not modify the CEP source. The converter does not execute ExtendScript and it does not compile source files.
 
 The skill root is the directory that contains this `SKILL.md`. Run the tools from that directory, or pass its absolute path. The CEP project is only the `--input` argument. Do not assume the user's project is the working directory.
+
+## Do not auto-choose
+
+Never pick `--ui`, `--design`, or `--host` on your own. Never infer them from a previous message, a scan strategy, or "the usual default."
+
+Scan first. Then stop and ask. Convert only after the user answers. If they change their mind later, follow the new answer. Do not override it.
+
+`scan-cep.mjs` prints `suggestedUi`. That is a recommendation to show the user, not a mode you may apply without asking.
 
 ## Workflow
 
@@ -37,29 +46,38 @@ Read `references/live/summary.json`. If the command fails, say the refresh faile
 node scripts/scan-cep.mjs --input /absolute/path/to/cep-extension
 ```
 
-4. Ask two questions before writing files, unless the user already answered them. Also ask which host to ship when the scan lists more than one supported app.
+4. Ask these questions and wait. Do not write files until they are answered. Also ask which host to ship when the scan lists more than one supported app.
 
-UI:
+UI, in this order. Recommend the first matching pure-UXP option. WebView comes last.
 
-- Retarget. Recommended when the project has editable source (a `src/` tree, Vue or Svelte files, TypeScript, or plain scripts) as well as a bundle. Keeps that UI in a WebView. You then separate ExtendScript and Node onto the UXP host and rebuild. A painted WebView is not finished.
-- Keep the current bundle inside a UXP WebView. Use this when the drop is only a built panel, or as the first scaffold.
-- Add a bolt-uxp React, Vue, or Svelte starter, and keep the current panel loadable. This is a new UI beside the port, not a replacement.
-- Native UXP HTML only, with no WebView. Only for a small static page the user wants rewritten.
+Pure UXP (suggested):
+
+- Native UXP HTML, with no WebView (`--ui native`). Suggested for a small static page or vanilla HTML/JS that can be rewritten as the UXP document.
+- bolt-uxp React (`--ui bolt-react`). Suggested when the CEP UI is React, Preact, Angular, Solid, Lit, or another component stack without a Vue/Svelte match.
+- bolt-uxp Vue (`--ui bolt-vue`). Suggested when the CEP UI is Vue or Nuxt.
+- bolt-uxp Svelte (`--ui bolt-svelte`). Suggested when the CEP UI is Svelte.
+
+WebView (last resort, only if the user wants to keep the old page):
+
+- Retarget (`--ui retarget`). Keep the existing UI in a WebView, copy source to `ui-src/`, and move ExtendScript and Node onto the UXP host.
+- Keep the current bundle (`--ui keep`). Built snapshot only, or a temporary scaffold. Buttons that still call CEP or Node stay dead.
+
+Do not recommend WebView first. Adobe's guidance is to skip WebView when UXP HTML or a Spectrum rebuild is enough. A WebView starts extra processes.
 
 Design, for the UXP shell and any new UI:
 
-- Spectrum. Recommended. Built-in `sp-heading` and `sp-button` widgets match the host. This chrome is the shell around the existing page. Retarget does not redraw the page in Spectrum.
-- Preserve the CEP page with no Spectrum chrome.
+- Spectrum. Recommended for the shell and for bolt starters. Built-in `sp-heading` and `sp-button` widgets match the host.
+- Preserve. No Spectrum chrome.
 
-Then convert:
+Then convert with the user's answers. Example after they chose bolt-react, Spectrum, and Photoshop:
 
 ```bash
-node scripts/convert.mjs --input /absolute/path/to/cep-extension --out /absolute/path/to/extension-uxp --force --ui retarget --design spectrum --host premierepro
+node scripts/convert.mjs --input /absolute/path/to/cep-extension --out /absolute/path/to/extension-uxp --force --ui bolt-react --design spectrum --host PS
 ```
 
-`--ui` is `retarget`, `keep`, `bolt-react`, `bolt-vue`, `bolt-svelte`, or `native`. `--design` is `spectrum` or `preserve`. `--host` is `PS`, `ID`, `premierepro`, or `ame` when you are shipping one app. Exit code 2 means only `MIGRATION.md` was written.
+`--ui` is required. It is `native`, `bolt-react`, `bolt-vue`, `bolt-svelte`, `retarget`, or `keep`. `--design` is `spectrum` or `preserve`. `--host` is `PS`, `ID`, `premierepro`, or `ame` when you are shipping one app. Exit code 2 means only `MIGRATION.md` was written.
 
-If the scan finds editable source, use `retarget` even when the user first said to keep the bundle. `keep` loads the old snapshot. Buttons that call ExtendScript or Node stay dead until you follow `RETARGET.md`.
+Do not switch `bolt-*` or `native` to `retarget` because source exists. Do not switch `keep` to `retarget` unless the user asked for a WebView. Follow the choice they just gave.
 
 5. If the strategy is `blocked`, stop. Explain which hosts cannot be targeted. Do not invent a manifest `app` id.
 6. Read `MIGRATION.md`, `host-handlers.js`, and `legacy-extendscript/`. Rewrite every throwing handler before calling the port finished. Return strings to the page. Do not invent Photoshop `batchPlay` descriptors. Premiere calls use `require("premierepro")` after you confirm the current API.
@@ -70,8 +88,9 @@ node scripts/validate-uxp.mjs --input /absolute/path/to/extension-uxp
 ```
 
 8. Tell the user every **uncovered** line in `MIGRATION.md` before anything else. A valid manifest does not mean those features work.
-9. If `RETARGET.md` exists, do that work before calling the port finished. Read the editable source, not the minified bundle. Keep the UI. Move every readable ExtendScript call and every Node call onto the host. Remote `fetch` from `plugin:/` is CORS-blocked; call `cepToUxp.http` so the host fetches it, and put the origin in `network.domains`. A local process or `listen()` is not a reason to stop: keep the tool names, run the ones the host can, and return the old error string for the rest. A cloud model that only returns text is not a substitute. JSXBIN and any call whose body you cannot read stay explicit throws. Do not invent a host DOM for them.
-10. A white panel is not finished, even when `validate-uxp.mjs` prints `OK`. Before you tell the user it works, check all of these:
+9. If the user chose `native` or `bolt-*`, recreate the UI on that path. Host work still belongs in UXP handlers. Do not treat a leftover WebView copy as the product they asked for.
+10. If `RETARGET.md` exists, the user chose a WebView path. Do that work before calling the port finished. Read the editable source, not the minified bundle. Keep the UI. Move every readable ExtendScript call and every Node call onto the host. Remote `fetch` from `plugin:/` is CORS-blocked; call `cepToUxp.http` so the host fetches it, and put the origin in `network.domains`. A local process or `listen()` is not a reason to stop: keep the tool names, run the ones the host can, and return the old error string for the rest. A cloud model that only returns text is not a substitute. JSXBIN and any call whose body you cannot read stay explicit throws. Do not invent a host DOM for them.
+11. A white panel is not finished, even when `validate-uxp.mjs` prints `OK`. Before you tell the user it works, check all of these when a WebView is in use:
 
 - `vite-cep` and `vite-cep-plugin` need a plain Vite build, not the CEP plugin. Inject `cep-to-uxp-boot.js` and `cep-to-uxp-shim.js` before the module script.
 - Strip every `crossorigin` attribute. `plugin:/` does not answer a CORS request, so the script and the CSS never load.
@@ -80,22 +99,24 @@ node scripts/validate-uxp.mjs --input /absolute/path/to/extension-uxp
 - The shell gives the WebView a real height and a dark background after it is moved into the UXP panel root. Do not rely on `height="100%"` alone.
 - Point `index.html` at the new hashed bundle and delete the previous hashed files. Then reload the plugin in the UXP Developer Tool. Refreshing the WebView does not reload `host-*.js`.
 
-11. The folder still has to be loaded in the UXP Developer Tool. "The panel opened" is not done. Done means the page is visible, and each source call returns the old string from a handler or is still named as uncovered with the file that calls it.
+12. The folder still has to be loaded in the UXP Developer Tool. "The panel opened" is not done. Done means the page is visible, and each source call returns the old string from a handler or is still named as uncovered with the file that calls it.
 
 If you change the converter, run `npm test` from this skill directory and leave it passing.
 
 ## Strategy
 
-| Report strategy | What was written |
+The scanner reports how the CEP page is built. That report is not a UI choice. You still ask.
+
+| Report strategy | What it means |
 | --- | --- |
-| `webview` | UXP shell plus the CEP page in `<webview src="plugin:/...">`. `CSInterface.js` is the bridge shim. |
-| `hybrid` | Same WebView shell, plus a hybrid section. Process, socket, and `.node` calls are not converted. |
-| `native` | CEP HTML is the UXP document. No WebView. Leftover `CSInterface` calls throw. |
+| `webview` | The CEP page needs a browser. If the user still chose native or bolt, recreate the UI in UXP. If they chose WebView, the shell hosts `<webview src="plugin:/...">`. |
+| `hybrid` | Same UI question, plus process, socket, or `.node` calls that are not converted. |
+| `native` | No framework, Node, or CEP bridge was found, so HTML can be the UXP document. Still ask. |
 | `blocked` | Report only. |
 
-`--ui retarget` is a WebView or native scaffold plus `ui-src/` and `RETARGET.md`. It is how a panel with source becomes a working UXP plugin: same UI, host calls on the UXP side. `--ui keep` only copies the current page. `--ui native` is a rewrite into UXP HTML. `--ui bolt-*` adds a new starter beside the loadable port.
+`--ui native` writes UXP HTML and no WebView. `--ui bolt-*` writes a Spectrum starter in `bolt/` and keeps a loadable copy of the old page as a fallback. `--ui retarget` is a WebView plus `ui-src/` and `RETARGET.md`. `--ui keep` only copies the current page.
 
-React, Vue, Svelte, Angular, Solid, Lit, Alpine, TypeScript, and plain JavaScript stay in the WebView. Recognize source by its files and package, not by one folder name: `src/`, `app/`, `frontend/`, `.vue`, `.svelte`, `.tsx`, `.ts`, and a `package.json` build script. A directory named `build/`, `dist/`, `out/`, or `release/` is a snapshot. When both exist, read the source and rebuild into the WebView. Do not rewrite the page into Spectrum unless the user asks for a native panel. Read [references/decision.md](references/decision.md) before overriding the scanner.
+Recognize source by its files and package, not by one folder name: `src/`, `app/`, `frontend/`, `.vue`, `.svelte`, `.tsx`, `.ts`, and a `package.json` build script. A directory named `build/`, `dist/`, `out/`, or `release/` is a snapshot. When both exist, read the source. Read [references/decision.md](references/decision.md) before overriding the scanner.
 
 ## After the scaffold
 

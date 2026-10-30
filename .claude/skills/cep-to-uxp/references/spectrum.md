@@ -7,7 +7,7 @@ Adobe's UXP UI guide says a plugin you ship should use Spectrum. There are two s
 | Built-in Spectrum widgets | The loadable plugin shell: `sp-heading`, and dialogs opened with `uxpShowModal()` | None. These tags exist in the host. |
 | Spectrum Web Components | The `bolt/` starter, via `featureFlags.enableSWCSupport` | npm install, import each component, and a bundler. Premiere currently expects SWC `0.37.0` and `@swc-uxp-wrappers`. |
 
-The CEP page inside the WebView keeps its old CSS. Spectrum chrome is the UXP frame around it: heading, dialog, and buttons. `--design preserve` leaves that frame out.
+Prefer Spectrum on a native UXP document or a bolt starter. The CEP page inside a WebView keeps its old CSS; Spectrum chrome there is only the UXP frame around it. `--design preserve` leaves that frame out. WebView is last resort.
 
 Do not put `sp-theme` on the loadable shell. Theme scoping belongs to Spectrum Web Components, which the shell does not bundle. Use host widgets there. Inside a bolt build, wrap new UI in `sp-theme` only after the SWC theme package is imported.
 

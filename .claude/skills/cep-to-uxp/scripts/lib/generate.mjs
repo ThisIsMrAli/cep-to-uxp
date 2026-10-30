@@ -675,21 +675,36 @@ export function renderRetarget(scan) {
 function retargetLines(scan, decision, extras) {
   const layers = scan.layers;
   if (!layers || decision.strategy === "blocked") return [];
+  const ui = extras.ui;
+  if (ui === "native" || (typeof ui === "string" && ui.startsWith("bolt-"))) {
+    return [
+      "## UI path",
+      ui === "native"
+        ? "This plugin is native UXP HTML. There is no WebView. Recreate host calls in the UXP document. A leftover `new CSInterface()` throws."
+        : `This plugin uses ${ui}. Recreate the UI in \`bolt/\` as Spectrum UXP. The copied CEP page is a fallback only, not the default shipped UI.`,
+      ""
+    ];
+  }
   if (layers.layout === "build-only") {
     return [
-      "## Retarget",
-      "This input is a built snapshot. No editable source was found beside it. A loaded WebView is not a finished port.",
-      "Ask for the project source, then convert again with `--ui retarget`.",
+      "## WebView",
+      "This input is a built snapshot. No editable source was found beside it.",
+      "WebView is a last-resort path. Prefer converting again with `--ui native` or a bolt starter if the user wants a pure UXP UI.",
       ""
     ];
   }
   if (!layers.hasEditableSource) return [];
+  if (ui === "retarget") {
+    return [
+      "## WebView",
+      "The user chose to keep the existing UI in a WebView. Follow `RETARGET.md`. Move ExtendScript and Node onto the UXP host, rebuild, and load that bundle in the WebView.",
+      ""
+    ];
+  }
   return [
-    "## Retarget",
-    "Editable source was found. A WebView that only displays the old bundle is not a finished port. Buttons still call CEP and Node inside that page.",
-    extras.ui === "retarget"
-      ? "Follow `RETARGET.md` in this folder. Keep the existing UI. Move ExtendScript and Node onto the UXP host, rebuild, and load that bundle in the WebView."
-      : "Convert again with `--ui retarget`, then follow `RETARGET.md`. Keep the existing UI. Do not redraw it in Spectrum.",
+    "## WebView",
+    "The current page is in a WebView. Buttons that still call CEP or Node inside that page stay dead until they move to the host.",
+    "WebView is a last-resort path. Do not switch to `--ui retarget` unless the user asks to keep the old UI.",
     ""
   ];
 }

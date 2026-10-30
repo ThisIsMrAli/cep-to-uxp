@@ -2,7 +2,7 @@
 
 An [Agent Skill](https://agentskills.io/specification) that turns a legacy Adobe CEP extension into a UXP plugin for Photoshop, InDesign, Premiere Pro, and Media Encoder.
 
-The panel you already shipped stays the panel people see. React, Vue, Svelte, Angular, Solid, Lit, Alpine, TypeScript, and plain JavaScript stay in a [UXP WebView](https://developer.adobe.com/uxp/uxp-api/reference-js/global-members/html-elements/html-web-view-element). ExtendScript and Node move to the UXP host, where `require("photoshop")`, `require("indesign")`, `require("premierepro")`, and `localFileSystem` exist. The CEP project is not modified.
+The agent always asks which UI path to take. Prefer native UXP HTML or a bolt Spectrum starter. A [UXP WebView](https://developer.adobe.com/uxp/uxp-api/reference-js/global-members/html-elements/html-web-view-element) is last resort, for keeping an existing React, Vue, Svelte, Angular, Solid, Lit, Alpine, TypeScript, or plain JavaScript page. ExtendScript and Node move to the UXP host, where `require("photoshop")`, `require("indesign")`, `require("premierepro")`, and `localFileSystem` exist. The CEP project is not modified.
 
 Invoke it in Cursor with `/cep-to-uxp`.
 
@@ -17,10 +17,10 @@ The skill makes the agent follow one procedure:
 1. Confirm the folder contains `CSXS/manifest.xml`. Stop if it is already a UXP plugin.
 2. Refresh Adobe’s public UXP docs, then read the live summary. If a documented app id is missing from the skill, stop. Do not invent one.
 3. Scan the project. A `build/`, `dist/`, `out/`, or `release/` folder is a snapshot. Source next to it (`src/`, `app/`, Vue, Svelte, TSX, JSX, or a build script) is what gets read.
-4. Ask which UI mode, which shell design, and which host, unless you already answered.
+4. Stop and ask which UI mode, which shell design, and which host. Do not pick them automatically. Suggest native UXP or bolt first. WebView is last resort.
 5. Write a new folder. Validate it until the checker prints `OK`.
 6. Say every uncovered line in `MIGRATION.md` before anything else.
-7. When `RETARGET.md` is present, edit `ui-src/`, move readable ExtendScript and Node onto `host-handlers.js`, rebuild with the project’s own script, and load that bundle in the WebView.
+7. When the user chose bolt or native, recreate the UI on that path. When `RETARGET.md` is present, they chose WebView: edit `ui-src/`, move readable ExtendScript and Node onto `host-handlers.js`, rebuild with the project’s own script, and load that bundle in the WebView.
 
 Done means each source call returns the old string from a host handler, or it is still named as uncovered with the file that calls it. "The panel opened" is not that list.
 
@@ -58,7 +58,7 @@ node .claude/skills/cep-to-uxp/scripts/convert.mjs \
   --input /path/to/cep-extension \
   --out /path/to/extension-uxp \
   --force \
-  --ui retarget \
+  --ui bolt-react \
   --design spectrum \
   --host PS
 node .claude/skills/cep-to-uxp/scripts/validate-uxp.mjs --input /path/to/extension-uxp
@@ -72,12 +72,12 @@ Load the output folder in the [UXP Developer Tool](https://developer.adobe.com/p
 
 | `--ui` | When to use it | What gets written |
 | --- | --- | --- |
-| `retarget` | The project has editable source. This is the default the agent should choose. | A loadable plugin, plus `ui-src/` and `RETARGET.md`. The existing UI stays in the WebView. The agent separates ExtendScript and Node, rebuilds, and points the WebView at the new bundle. |
-| `keep` | You only have a built panel, or you want the scaffold before the rewrite. | The current page inside `<webview src="plugin:/...">`. Buttons that still call CEP or Node stay dead until they are moved. |
-| `bolt-react` | You want a new Spectrum Web Components UI beside the port. | A bolt-uxp React starter in `bolt/`. The current panel stays loadable. Dependencies are not installed. |
-| `bolt-vue` | Same, for Vue. | A bolt-uxp Vue starter in `bolt/`. |
-| `bolt-svelte` | Same, for Svelte. | A bolt-uxp Svelte starter in `bolt/`. |
-| `native` | A small static page that should become UXP HTML, with no WebView. | The CEP HTML is the plugin document. A leftover `new CSInterface()` throws. |
+| `native` | Suggested for a small static or vanilla page. | The CEP HTML is the UXP document. No WebView. A leftover `new CSInterface()` throws. |
+| `bolt-react` | Suggested for React, Preact, Angular, Solid, Lit, and similar stacks. | A bolt-uxp React starter in `bolt/`. Recreate the UI there. A copy of the old page stays loadable as a fallback. Dependencies are not installed. |
+| `bolt-vue` | Suggested for Vue or Nuxt. | A bolt-uxp Vue starter in `bolt/`. |
+| `bolt-svelte` | Suggested for Svelte. | A bolt-uxp Svelte starter in `bolt/`. |
+| `retarget` | Last resort: keep the existing UI in a WebView. | A loadable plugin, plus `ui-src/` and `RETARGET.md`. The agent separates ExtendScript and Node, rebuilds, and points the WebView at the new bundle. |
+| `keep` | Last resort scaffold for a built panel only. | The current page inside `<webview src="plugin:/...">`. Buttons that still call CEP or Node stay dead until they are moved. |
 
 ## Shell design
 

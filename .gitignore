@@ -7,3 +7,7 @@ node_modules/
 .env.*
 !.env.example
 !fixtures/**/.env
+
+# /brag video output (Hyperframes composition, renders, TTS venv)
+brag-output/
+brag-output-*/

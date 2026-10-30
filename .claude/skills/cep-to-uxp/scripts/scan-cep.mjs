@@ -1,4 +1,5 @@
 import { parseArgs } from "./lib/args.mjs";
+import { suggestUi } from "./lib/decide.mjs";
 import { scanCep } from "./lib/scan.mjs";
 
 const help = `Usage: node scripts/scan-cep.mjs --input <cep-folder>
@@ -13,7 +14,8 @@ if (args.help || !args.input) {
 }
 
 try {
-  process.stdout.write(`${JSON.stringify(scanCep(args.input), null, 2)}\n`);
+  const scan = scanCep(args.input);
+  process.stdout.write(`${JSON.stringify({ ...scan, suggestedUi: suggestUi(scan) }, null, 2)}\n`);
 } catch (error) {
   process.stderr.write(`${error.message}\n`);
   process.exit(1);

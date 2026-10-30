@@ -14,6 +14,7 @@ import { extractEvalScripts, extractFlyoutItems, frameworksFromSource, FRAMEWORK
 import { selectManifestIcons } from "../.claude/skills/cep-to-uxp/scripts/lib/generate.mjs";
 import { detectBuild } from "../.claude/skills/cep-to-uxp/scripts/lib/layers.mjs";
 import { convertCep } from "../.claude/skills/cep-to-uxp/scripts/lib/convert.mjs";
+import { suggestUi } from "../.claude/skills/cep-to-uxp/scripts/lib/decide.mjs";
 import { validatePlugin } from "../.claude/skills/cep-to-uxp/scripts/lib/validate.mjs";
 
 const require = createRequire(import.meta.url);
@@ -183,7 +184,7 @@ test("WebView shim round-trips evalScript and keeps sync host getters", async ()
 
 test("vanilla JavaScript CEP becomes a Photoshop WebView plugin", () => {
   const out = path.join(temp, "vanilla");
-  const result = convertCep({ input: fixture("vanilla-js"), out, force: true });
+  const result = convertCep({ input: fixture("vanilla-js"), out, force: true, ui: "keep" });
   assert.equal(result.exitCode, 0);
   assert.equal(result.report.strategy, "webview");
   assert.equal(result.report.scan.bundle.nodeEnabled, true);
@@ -223,7 +224,7 @@ test("vanilla JavaScript CEP becomes a Photoshop WebView plugin", () => {
 
 test("React CEP stays in a WebView and drops Illustrator", () => {
   const out = path.join(temp, "react");
-  const result = convertCep({ input: fixture("react-panel"), out, force: true });
+  const result = convertCep({ input: fixture("react-panel"), out, force: true, ui: "keep" });
   assert.equal(result.report.strategy, "webview");
   assert.deepEqual(result.report.scan.frameworks, ["react"]);
   assert.deepEqual(result.report.scan.browserLibs, ["jquery"]);
@@ -241,7 +242,7 @@ test("React CEP stays in a WebView and drops Illustrator", () => {
 
 test("child_process CEP is scaffolded as a hybrid WebView plugin", () => {
   const out = path.join(temp, "hybrid");
-  const result = convertCep({ input: fixture("node-hybrid"), out, force: true });
+  const result = convertCep({ input: fixture("node-hybrid"), out, force: true, ui: "keep" });
   assert.equal(result.report.strategy, "hybrid");
   const manifest = readJson(path.join(out, "manifest.json"));
   assert.deepEqual(manifest.host, { app: "premierepro", minVersion: "25.6.0" });
@@ -252,7 +253,7 @@ test("child_process CEP is scaffolded as a hybrid WebView plugin", () => {
 
 test("a static CEP page becomes a native UXP panel", () => {
   const out = path.join(temp, "static");
-  const result = convertCep({ input: fixture("static-html"), out, force: true });
+  const result = convertCep({ input: fixture("static-html"), out, force: true, ui: "native" });
   assert.equal(result.report.strategy, "native");
   const manifest = readJson(path.join(out, "manifest.json"));
   assert.equal(manifest.requiredPermissions, undefined);
@@ -265,7 +266,7 @@ test("a static CEP page becomes a native UXP panel", () => {
 
 test("Illustrator-only CEP is reported and not packaged as UXP", () => {
   const out = path.join(temp, "illustrator");
-  const result = convertCep({ input: fixture("illustrator-only"), out, force: true });
+  const result = convertCep({ input: fixture("illustrator-only"), out, force: true, ui: "keep" });
   assert.equal(result.exitCode, 2);
   assert.equal(result.report.strategy, "blocked");
   assert.equal(fs.existsSync(path.join(out, "manifest.json")), false);
@@ -278,6 +279,7 @@ test("--strategy native keeps the CEP page out of a WebView shim", () => {
     input: fixture("vanilla-js"),
     out,
     force: true,
+    ui: "keep",
     strategy: "native"
   });
   assert.equal(result.report.strategy, "native");
@@ -313,7 +315,7 @@ test("source stacks are recognized beyond React", () => {
 
 test("Vue and TypeScript CEP panels convert to WebView plugins", () => {
   const vueOut = path.join(temp, "vue");
-  const vue = convertCep({ input: fixture("vue-panel"), out: vueOut, force: true });
+  const vue = convertCep({ input: fixture("vue-panel"), out: vueOut, force: true, ui: "keep" });
   assert.equal(vue.report.strategy, "webview");
   assert.ok(vue.report.scan.frameworks.includes("vue"));
   assert.deepEqual(vue.report.scan.evalScripts, ["listLayers()"]);
@@ -322,7 +324,7 @@ test("Vue and TypeScript CEP panels convert to WebView plugins", () => {
   assert.equal(validatePlugin(vueOut).ok, true, validatePlugin(vueOut).errors.join("\n"));
 
   const tsOut = path.join(temp, "ts");
-  const ts = convertCep({ input: fixture("typescript-panel"), out: tsOut, force: true });
+  const ts = convertCep({ input: fixture("typescript-panel"), out: tsOut, force: true, ui: "keep" });
   assert.equal(ts.report.strategy, "webview");
   assert.ok(ts.report.scan.languages.includes("typescript"));
   assert.equal(readJson(path.join(tsOut, "manifest.json")).host.app, "ID");
@@ -344,6 +346,9 @@ test("the skill folder matches the Agent Skills spec and is linked for other age
   assert.match(frontmatter, /license: MIT/);
   assert.equal(fs.existsSync(path.join(skill, "scripts/scan-cep.mjs")), true);
   assert.equal(fs.existsSync(path.join(skill, "references/stacks.md")), true);
+  assert.match(text, /Never pick `--ui`/);
+  assert.match(text, /WebView \(last resort/);
+  assert.match(text, /Pure UXP \(suggested\)/);
   for (const agent of [".cursor/skills", ".agents/skills", ".codex/skills", ".github/skills"]) {
     const linked = fs.realpathSync(path.join(repo, agent, "cep-to-uxp", "SKILL.md"));
     assert.equal(linked, fs.realpathSync(path.join(skill, "SKILL.md")));
@@ -356,6 +361,23 @@ test("opening Finder or Explorer is not a hybrid plugin", () => {
   assert.equal(processNeedsHybrid(openers), false);
   const other = collectProcessCalls("window.cep.process.createProcess('/usr/bin/true');");
   assert.equal(processNeedsHybrid(other), true);
+});
+
+test("suggested UI prefers native or bolt over WebView", () => {
+  assert.equal(suggestUi(scanCep(fixture("static-html"))), "native");
+  assert.equal(suggestUi(scanCep(fixture("vanilla-js"))), "native");
+  assert.equal(suggestUi(scanCep(fixture("react-panel"))), "bolt-react");
+  assert.equal(suggestUi(scanCep(fixture("vue-panel"))), "bolt-vue");
+});
+
+test("convert CLI requires --ui and does not pick a mode", () => {
+  const result = spawnSync(
+    process.execPath,
+    [path.join(skill, "scripts/convert.mjs"), "--input", fixture("vanilla-js"), "--out", path.join(temp, "no-ui")],
+    { encoding: "utf8" }
+  );
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /--ui/);
 });
 
 test("bolt-react adds a starter without replacing the loadable plugin", () => {

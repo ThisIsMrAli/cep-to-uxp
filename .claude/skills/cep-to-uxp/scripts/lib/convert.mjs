@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { decide } from "./decide.mjs";
+import { decide, suggestUi } from "./decide.mjs";
 import {
   pluginUrl,
   readRuntime,
@@ -39,6 +39,7 @@ export function convertCep(options) {
   });
   decision.ui = ui;
   decision.design = design;
+  decision.suggestedUi = suggestUi(scan);
   decision.title = scan.bundle.name;
   prepareOut(out, options.force);
 

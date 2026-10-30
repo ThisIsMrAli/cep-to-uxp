@@ -6,7 +6,7 @@
     <title>CEP to UXP — convert Adobe CEP extensions to UXP plugins</title>
     <meta
       name="description"
-      content="Open-source agent skill that converts Adobe CEP and CSXS extensions into UXP plugins for Photoshop, InDesign, Premiere Pro, and Media Encoder. Keeps React, Vue, Svelte, Angular, and TypeScript UI in a WebView."
+      content="Open-source agent skill that converts Adobe CEP and CSXS extensions into UXP plugins for Photoshop, InDesign, Premiere Pro, and Media Encoder. Prefers native UXP or a Spectrum starter. WebView is last resort."
     />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://thisismrali.github.io/cep-to-uxp/" />
@@ -14,7 +14,7 @@
     <meta property="og:title" content="CEP to UXP" />
     <meta
       property="og:description"
-      content="Convert legacy Adobe CEP extensions into UXP plugins. The existing UI stays in a WebView. ExtendScript and Node move to the host."
+      content="Convert legacy Adobe CEP extensions into UXP plugins. Prefer native UXP or Spectrum. WebView is last resort. ExtendScript and Node move to the host."
     />
     <meta property="og:url" content="https://thisismrali.github.io/cep-to-uxp/" />
     <meta name="twitter:card" content="summary" />
@@ -253,7 +253,8 @@
       <h1>CEP panels, carried into UXP.</h1>
       <p class="lede">
         An agent skill for Photoshop, InDesign, Premiere Pro, and Media Encoder.
-        The UI you already shipped stays in a WebView. ExtendScript and Node move to the host.
+        It always asks which path to take. Native UXP or a Spectrum starter first. WebView last.
+        ExtendScript and Node move to the host.
       </p>
       <div class="actions">
         <a class="button primary" href="#install">Install the skill</a>
@@ -284,6 +285,7 @@
           <li>Confirm <code>CSXS/manifest.xml</code>. Stop if the folder is already a UXP plugin.</li>
           <li>Refresh Adobe’s public UXP docs. If a documented app id is missing from the skill, stop. Do not invent one.</li>
           <li>Scan source, not only the minified bundle. <code>build/</code> and <code>dist/</code> are snapshots.</li>
+          <li>Ask which UI, design, and host. Suggest native UXP or bolt first. Do not pick automatically.</li>
           <li>Write a new folder. Leave the CEP project untouched.</li>
           <li>Validate until the checker prints <code>OK</code>.</li>
           <li>Tell every uncovered line in <code>MIGRATION.md</code> before calling the port finished.</li>
@@ -293,41 +295,41 @@
 
       <section class="block" id="modes">
         <h2>UI modes</h2>
-        <p>Pass one with <code>--ui</code>. Spectrum chrome on the shell is <code>--design spectrum</code>. <code>--design preserve</code> adds no new frame.</p>
+        <p>Pass one with <code>--ui</code> after the user answers. Spectrum chrome on the shell is <code>--design spectrum</code>. <code>--design preserve</code> adds no new frame. Native and bolt are the suggested path. WebView is last resort.</p>
         <table class="modes">
           <thead>
             <tr><th>Mode</th><th>Use it when</th><th>Result</th></tr>
           </thead>
           <tbody>
             <tr>
-              <td><code>retarget</code></td>
-              <td>The project has source. This is the one to choose.</td>
-              <td>The current UI stays in the WebView. <code>ui-src/</code> and <code>RETARGET.md</code> separate ExtendScript and Node onto the host.</td>
-            </tr>
-            <tr>
-              <td><code>keep</code></td>
-              <td>You only have a built panel.</td>
-              <td>The page is copied into the WebView. Calls that still hit CEP or Node stay dead until they are moved.</td>
+              <td><code>native</code></td>
+              <td>Suggested for a small static or vanilla page.</td>
+              <td>No WebView. The CEP HTML is the UXP document. A leftover <code>new CSInterface()</code> throws.</td>
             </tr>
             <tr>
               <td><code>bolt-react</code></td>
-              <td>You want a new React starter beside the port.</td>
-              <td>bolt-uxp source in <code>bolt/</code>. The current panel stays loadable. Dependencies are not installed.</td>
+              <td>Suggested for React and similar stacks.</td>
+              <td>bolt-uxp source in <code>bolt/</code>. Recreate the UI there. A copy of the old page stays loadable. Dependencies are not installed.</td>
             </tr>
             <tr>
               <td><code>bolt-vue</code></td>
-              <td>Same, for Vue.</td>
+              <td>Suggested for Vue.</td>
               <td>A Vue starter in <code>bolt/</code>.</td>
             </tr>
             <tr>
               <td><code>bolt-svelte</code></td>
-              <td>Same, for Svelte.</td>
+              <td>Suggested for Svelte.</td>
               <td>A Svelte starter in <code>bolt/</code>.</td>
             </tr>
             <tr>
-              <td><code>native</code></td>
-              <td>A small static page should become UXP HTML.</td>
-              <td>No WebView. A leftover <code>new CSInterface()</code> throws.</td>
+              <td><code>retarget</code></td>
+              <td>Last resort: keep the existing UI.</td>
+              <td>The current UI stays in the WebView. <code>ui-src/</code> and <code>RETARGET.md</code> separate ExtendScript and Node onto the host.</td>
+            </tr>
+            <tr>
+              <td><code>keep</code></td>
+              <td>Last resort: built panel only.</td>
+              <td>The page is copied into the WebView. Calls that still hit CEP or Node stay dead until they are moved.</td>
             </tr>
           </tbody>
         </table>
@@ -399,7 +401,7 @@
         <pre><code>node .claude/skills/cep-to-uxp/scripts/convert.mjs \
   --input /path/to/cep-extension \
   --out /path/to/extension-uxp \
-  --force --ui retarget --design spectrum --host PS</code></pre>
+  --force --ui bolt-react --design spectrum --host PS</code></pre>
       </section>
     </main>
     <footer>
