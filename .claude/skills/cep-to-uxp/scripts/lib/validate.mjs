@@ -68,7 +68,7 @@ export function validatePlugin(dir) {
   }
 
   const ui = report.ui || "";
-  if (ui.startsWith("bolt-")) validateBolt(root, manifest, errors);
+  if (ui.startsWith("bolt-")) validateBolt(root, manifest, report, errors);
   else if (strategy === "native" || ui === "native") validateNative(root, manifest, [...panels, ...commands], errors);
   else validateWebview(root, manifest, report, scripts, strategy, errors, warnings);
 
@@ -123,7 +123,11 @@ function checkIcons(manifest, errors) {
   }
 }
 
-function validateBolt(root, manifest, errors) {
+function validateBolt(root, manifest, report, errors) {
+  const migration = fs.existsSync(path.join(root, "MIGRATION.md"))
+    ? fs.readFileSync(path.join(root, "MIGRATION.md"), "utf8")
+    : "";
+  if (!migration.includes("Do not load `bolt/`")) errors.push("MIGRATION.md must say to load this folder, not bolt/");
   if (manifest.requiredPermissions?.webview) errors.push("A bolt plugin must not request WebView permission");
   if (fs.existsSync(path.join(root, "webview"))) errors.push("A bolt plugin must not include a webview folder");
   const html = manifest.main && fs.existsSync(path.join(root, manifest.main))
@@ -144,6 +148,21 @@ function validateBolt(root, manifest, errors) {
   if (!fs.existsSync(vite) || !fs.readFileSync(vite, "utf8").includes("modulePreload: false")) {
     errors.push("bolt/vite.config.ts must set modulePreload to false");
   }
+  const compat = path.join(root, "uxp-compat.js");
+  if (!fs.existsSync(compat)) errors.push("uxp-compat.js is missing");
+  else {
+    const checked = spawnSync(process.execPath, ["--check", compat], { encoding: "utf8" });
+    if (checked.status !== 0) errors.push(`uxp-compat.js failed node --check: ${checked.stderr || checked.stdout}`);
+    const source = fs.readFileSync(compat, "utf8");
+    for (const needle of ["IntersectionObserver", "ResizeObserver", "createTreeWalker", "NodeFilter", "currentColor"]) {
+      if (!source.includes(needle)) errors.push(`uxp-compat.js is missing ${needle}`);
+    }
+  }
+  if (!html.includes('src="uxp-compat.js"')) errors.push("index.html must load uxp-compat.js before the bundle");
+  if (!fs.existsSync(path.join(root, "bolt", "uxp-tailwind.cjs"))) errors.push("bolt/uxp-tailwind.cjs is missing");
+  if (!fs.existsSync(path.join(root, "bolt", "patch-react-doc.mjs"))) errors.push("bolt/patch-react-doc.mjs is missing");
+  const planText = fs.existsSync(plan) ? fs.readFileSync(plan, "utf8") : "";
+  if (!planText.includes("Radix")) errors.push("bolt/PORT.md must warn off Radix dialogs in the UXP document");
 }
 
 function validateNative(root, manifest, panels, errors) {

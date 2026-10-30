@@ -139,6 +139,9 @@ function writeBoltProduct(scan, decision, out, panels, ui) {
   fs.writeFileSync(path.join(out, "bolt", "PORT.md"), renderPortPlan(scan, ui));
   fs.writeFileSync(path.join(out, "bolt", "vite.config.ts"), viteUxpConfig());
   fs.writeFileSync(path.join(out, "cep-to-uxp-entry.js"), renderNativeEntry(panels, decision.flyoutItems));
+  fs.writeFileSync(path.join(out, "uxp-compat.js"), readRuntime("premiere-compat.js"));
+  fs.writeFileSync(path.join(out, "bolt", "uxp-tailwind.cjs"), readRuntime("premiere-tailwind.cjs"));
+  fs.writeFileSync(path.join(out, "bolt", "patch-react-doc.mjs"), readRuntime("patch-react-doc.mjs"));
   fs.writeFileSync(path.join(out, "index.html"), renderPureHtml());
   copyLegacy(scan, out);
   fs.writeFileSync(path.join(out, "host-http.js"), readRuntime("host-http.cjs"));
@@ -153,9 +156,11 @@ function renderPureHtml() {
   return `<!DOCTYPE html>
 <html>
   <head>
+    <script src="uxp-compat.js"></script>
     <meta charset="utf-8" />
     <style>
       html, body, #root { margin: 0; width: 100%; height: 100%; background: #1e1e1e; }
+      [role="button"] { cursor: pointer; }
     </style>
   </head>
   <body>
@@ -184,6 +189,25 @@ export default defineConfig({
 }
 
 function renderPortPlan(scan, ui) {
+  const documentNotes = `
+## UXP document
+
+Photoshop, InDesign, Premiere Pro, and Media Encoder share this document. It is not the CEP browser. The crashes below were hit in Premiere. Adobe's known-issues page lists the same HTML and CSS gaps for Photoshop. Treat them as shared until a host build proves one of them fixed. Read \`references/uxp-document.md\` in the skill.
+
+\`uxp-compat.js\` is the first script in \`index.html\`. Leave it there, before the bundle. It stubs IntersectionObserver and ResizeObserver (each instance has \`_observer\`), MutationObserver, NodeFilter, createTreeWalker, missing HTML* constructors, ownerDocument, defaultView, and rewrites \`currentColor\` plus unitless SVG width and height.
+
+Do not emit \`<button>\` for app chrome. The host can draw its own skin on a button and ignore Tailwind. Use \`<div role="button">\`. Radix tabs, selects, and switches still emit buttons. Treat those as unsafe on every host.
+
+Do not emit Radix Dialog, Popper, tooltip observers, or react-remove-scroll. A dialog is an absolute layer inside the panel: \`position: absolute; top: 0; left: 0; width: 100%; height: 100%\` for the scrim, and a card that is not the full height. Do not use \`inset\` or \`bottom\` as the only way to fill the panel. The app frame is \`position: relative; height: 100%; overflow: hidden\`.
+
+In \`tailwind.config.js\` set \`important: true\` and add \`require("./uxp-tailwind.cjs")\` to plugins. The UXP document ignores \`gap\`, does not match \`.mb-1\\\\.5\`, and drops \`rgb(var(--token) / alpha)\`. \`text-transform\` is documented as unsupported. The plugin writes \`[class~="mb-1.5"]\`, turns gap and space-y into child margins in pixels, and paints hex colors.
+
+After the build, run \`node patch-react-doc.mjs <bundle>\`. React's \`nodeType === 9 ? node : node.ownerDocument\` throws when ownerDocument is missing. \`validate-uxp.mjs\` printing OK does not mean a click survives.
+
+Spectrum \`sp-textfield\`, \`sp-picker\`, and \`sp-menu-item\` can expose \`value\` as a getter. Set \`value\` and \`selected\` with \`setAttribute\`. Adobe documents the same rule for \`select\` and \`option\`.
+
+Build the bolt app before calling the port done.
+`;
   return `# Port ${scan.bundle.name}
 
 This is a pure UXP ${ui} plugin. There is no WebView folder and index.html has no <webview>.
@@ -201,7 +225,7 @@ Do not pass \`value\` as a React prop to \`sp-textfield\`, \`sp-picker\`, or \`s
 A name that appears only inside a comment, such as an \`evalTS("myFunc")\` example, is not a product feature. Name the real host functions you can read.
 
 Do not point manifest icons at \`webview/\`. This plugin does not have that folder.
-`;
+${documentNotes}`;
 }
 
 function copySourceForPort(scan, dest) {
@@ -262,14 +286,16 @@ function writeWebview(scan, decision, out, panels) {
 function writeNative(scan, decision, out, panels) {
   copyTree(scan.input, out);
   replaceNamed(out, /^CSInterface\.js$/i, readRuntime("csinterface-native-stub.js"));
+  const compat = path.join(out, "uxp-compat.js");
+  fs.writeFileSync(compat, readRuntime("premiere-compat.js"));
   const entry = path.join(out, "cep-to-uxp-entry.js");
   fs.writeFileSync(entry, renderNativeEntry(panels, decision.flyoutItems));
   for (const panel of panels) {
     const htmlPath = path.join(out, panel.mainPath);
     if (!fs.existsSync(htmlPath)) continue;
     const html = fs.readFileSync(htmlPath, "utf8");
-    const src = relativeUrl(htmlPath, entry);
-    fs.writeFileSync(htmlPath, applySpectrumChrome(injectScripts(html, [src]), scan.bundle.name, decision.design));
+    const sources = [relativeUrl(htmlPath, compat), relativeUrl(htmlPath, entry)];
+    fs.writeFileSync(htmlPath, applySpectrumChrome(injectScripts(html, sources), scan.bundle.name, decision.design));
   }
   copyLegacy(scan, out);
   fs.writeFileSync(path.join(out, "host-handlers.js"), renderHandlers(scan.evalScripts));

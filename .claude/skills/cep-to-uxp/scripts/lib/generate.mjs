@@ -712,8 +712,15 @@ function retargetLines(scan, decision, extras) {
 export function renderMigration(scan, decision, extras) {
   const coverage = buildCoverage(scan);
   const uncovered = uncoveredItems(coverage);
+  const bolt = extras.ui && String(extras.ui).startsWith("bolt-");
   const lines = [
     `# ${scan.bundle.name} → UXP`,
+    "",
+    "## Load this folder",
+    "Open the folder that contains this file and `index.html` in the UXP Developer Tool.",
+    ...(bolt
+      ? ["Do not load `bolt/`. That directory is the UI source. `bolt/uxp.config.ts` is not the plugin manifest."]
+      : []),
     "",
     "## Tell the user",
     uncovered.length || scan.skippedFiles?.length
@@ -754,6 +761,9 @@ export function renderMigration(scan, decision, extras) {
           `A ${extras.ui} port lives in \`bolt/\`. The loadable document is the parent index.html. It has no WebView.`,
           "Read `bolt/PORT.md`. Clone the CEP screens from `bolt/cep-src`. Do not replace them with a smaller page.",
           "Install dependencies in `bolt/` before building. Keep `build.modulePreload` false.",
+          "Keep `uxp-compat.js` first in `index.html` on every host. Add `uxp-tailwind.cjs` with `important: true`. After the build, run `node bolt/patch-react-doc.mjs <bundle>`. Read `bolt/PORT.md` before writing a dialog or a `<button>`.",
+          "These DOM and CSS gaps were reproduced in Premiere and are documented for Photoshop on the same UXP known-issues pages. Apply them in InDesign and Media Encoder too.",
+          "`validate-uxp.mjs` printing OK does not mean a click survives.",
           ""
         ]
       : []),

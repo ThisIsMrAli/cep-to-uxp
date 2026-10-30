@@ -12,7 +12,7 @@ license: MIT
 compatibility: Requires Node.js 18 or newer. Uses only the Node standard library.
 metadata:
   author: cep-to-uxp
-  version: "1.7.0"
+  version: "1.9.0"
 ---
 
 # CEP to UXP
@@ -38,7 +38,9 @@ Scan first. Then stop and ask. Convert only after the user answers. If they chan
 node scripts/refresh-docs.mjs
 ```
 
-Read `references/live/summary.json`. If the command fails, say the refresh failed and use [references/hosts.md](references/hosts.md). If `appsMissingFromSkill` is not empty, stop and tell the user. Do not invent a manifest app id from the page text.
+Read `references/live/summary.json`. If the command fails, say the refresh failed and use [references/hosts.md](references/hosts.md) and [references/uxp-document.md](references/uxp-document.md). If `appsMissingFromSkill` is not empty, stop and tell the user. Do not invent a manifest app id from the page text.
+
+The refresh also saves Adobe's shared limit pages: `known-issues.txt`, `unsupported-elements.txt`, `unsupported-attributes.txt`, `css-styles.txt`, and `css-styling.txt`. Read those before writing UI. `summary.json` lists which limits were present in `limits`. Follow a limit that is in the live text. If a limit disappeared from the live page, do not keep enforcing it from memory. These pages are the shared UXP document, not a Premiere-only list.
 
 3. Scan:
 
@@ -100,6 +102,15 @@ node scripts/validate-uxp.mjs --input /absolute/path/to/extension-uxp
 - A name that appears only in a comment, such as `evalTS("myFunc")` in a bolt example, is not a feature. List the real host functions you can read.
 - Premiere has no `MutationObserver`. Keep `build.modulePreload: false` and an iife bundle. Vite's modulepreload polyfill throws `MutationObserver is not defined` and the panel never paints.
 - Do not pass `value` as a React prop on `sp-textfield`, `sp-picker`, or `sp-menu-item`. In Premiere those properties are getter-only and React throws `Cannot set property value`. Set `value` and `selected` with `setAttribute`.
+
+Photoshop, InDesign, Premiere, and Media Encoder share one UXP document. It is not the CEP browser. The crashes in the Gemo log were found in Premiere. Adobe lists the same HTML and CSS gaps on the Photoshop known-issues page. Apply the compat script, the Tailwind plugin, and `bolt/PORT.md` on every host. Read [references/uxp-document.md](references/uxp-document.md). An uncaught exception can clear the panel. `validate-uxp.mjs` printing `OK` does not mean a click survives.
+
+- Load the parent folder in the UXP Developer Tool, not `bolt/`.
+- Leave `uxp-compat.js` as the first script in `index.html`.
+- Set Tailwind `important: true` and require `./uxp-tailwind.cjs`. Do not paint with `rgb(var(--token) / alpha)`. `text-transform` is unsupported.
+- App chrome is `<div role="button">`, not `<button>`. Do not mount Radix Dialog, Popper, a tooltip observer, or `react-remove-scroll`. A dialog is an absolute layer inside the panel, with explicit `top`, `left`, `width`, and `height`.
+- Build the bolt app, then run `node bolt/patch-react-doc.mjs` on the bundle, before calling the port done.
+- Host APIs still differ. Photoshop uses `require("photoshop")`. InDesign uses `require("indesign")`. Premiere uses `require("premierepro")`. None of them run ExtendScript.
 10. If `RETARGET.md` exists, the user chose a WebView path. Do that work before calling the port finished. Read the editable source, not the minified bundle. Keep the UI. Move every readable ExtendScript call and every Node call onto the host. Remote `fetch` from `plugin:/` is CORS-blocked; call `cepToUxp.http` so the host fetches it, and put the origin in `network.domains`. A local process or `listen()` is not a reason to stop: keep the tool names, run the ones the host can, and return the old error string for the rest. A cloud model that only returns text is not a substitute. JSXBIN and any call whose body you cannot read stay explicit throws. Do not invent a host DOM for them.
 11. A white panel is not finished, even when `validate-uxp.mjs` prints `OK`. Before you tell the user it works, check all of these when a WebView is in use:
 
@@ -164,6 +175,7 @@ Recognize source by its files and package, not by one folder name: `src/`, `app/
 | Need | File |
 | --- | --- |
 | Current UXP docs | Run `scripts/refresh-docs.mjs`, then read `references/live/summary.json` |
+| UXP document limits | [references/uxp-document.md](references/uxp-document.md) |
 | Spectrum UI | [references/spectrum.md](references/spectrum.md) |
 | Hosts and plugin types | [references/apps.md](references/apps.md) |
 | React, Vue, or another UI stack | [references/stacks.md](references/stacks.md) |

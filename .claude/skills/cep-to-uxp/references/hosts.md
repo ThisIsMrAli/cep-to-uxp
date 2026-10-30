@@ -18,6 +18,8 @@ Manifest app ids from [the UXP manifest reference](https://developer.adobe.com/u
 
 Floors exist so local WebView is not declared for an older host. They are not a promise about every API. Raise `minVersion` when the host docs require it.
 
+The panel document is shared. HTML and CSS limits are listed once for Photoshop and again, in the same words, for Premiere. InDesign and Media Encoder do not publish a separate list. DOM and CSS guards in `uxp-compat.js` apply to every host. See [uxp-document.md](uxp-document.md). Host modules (`photoshop`, `indesign`, `premierepro`) stay different, and none of them run ExtendScript.
+
 ## Timeline context
 
 From Adobe's September 2026 transition note:

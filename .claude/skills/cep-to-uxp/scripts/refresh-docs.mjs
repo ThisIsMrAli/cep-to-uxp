@@ -1,17 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { extractDocFacts, mergeDocFacts } from "./lib/docs.mjs";
+import { DOC_PAGES, extractDocFacts, mergeDocFacts } from "./lib/docs.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const liveDir = path.join(root, "references/live");
-const PAGES = [
-  ["manifest", "https://developer.adobe.com/uxp/guides/explanation/concepts/manifest/"],
-  ["webview", "https://developer.adobe.com/uxp/uxp-api/reference-js/global-members/html-elements/html-web-view-element"],
-  ["interfaces", "https://developer.adobe.com/uxp/guides/explanation/fundamentals/user-interfaces/"],
-  ["entrypoints", "https://developer.adobe.com/uxp/guides/explanation/concepts/panels-and-commands/"],
-  ["migration", "https://developer.adobe.com/uxp/migration-center/"]
-];
+const PAGES = DOC_PAGES.map((page) => [page.id, page.url]);
 
 const BUNDLED_APPS = new Set(["PS", "ID", "premierepro", "ame", "mediaencoder"]);
 
@@ -53,6 +47,7 @@ const summary = {
   webview: merged.webview,
   spectrum: merged.spectrum,
   commands: merged.commands,
+  limits: merged.limits,
   appsMissingFromSkill: freshApps
 };
 

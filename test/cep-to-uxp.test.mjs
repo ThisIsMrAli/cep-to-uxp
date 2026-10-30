@@ -393,6 +393,27 @@ test("commented evalTS examples are not product features", () => {
   assert.deepEqual(names, ["gemoInspect"]);
 });
 
+test("a Premiere bolt port ships the compat script and names the load folder", () => {
+  const out = path.join(temp, "premiere-bolt");
+  const result = convertCep({
+    input: fixture("node-hybrid"),
+    out,
+    force: true,
+    ui: "bolt-react",
+    host: "premierepro"
+  });
+  assert.equal(result.report.decision.hosts[0].app, "premierepro");
+  const html = fs.readFileSync(path.join(out, "index.html"), "utf8");
+  assert.ok(html.indexOf("uxp-compat.js") < html.indexOf("cep-to-uxp-entry.js"));
+  assert.match(fs.readFileSync(path.join(out, "uxp-compat.js"), "utf8"), /_observer = this/);
+  assert.match(fs.readFileSync(path.join(out, "MIGRATION.md"), "utf8"), /Do not load `bolt\/`/);
+  assert.match(fs.readFileSync(path.join(out, "bolt/PORT.md"), "utf8"), /Radix/);
+  assert.match(fs.readFileSync(path.join(out, "bolt/uxp-tailwind.cjs"), "utf8"), /class~=/);
+  assert.equal(fs.existsSync(path.join(out, "bolt/patch-react-doc.mjs")), true);
+  assert.equal(fs.existsSync(path.join(out, "host-premiere.js")), true);
+  assert.equal(validatePlugin(out).ok, true, validatePlugin(out).errors.join("\n"));
+});
+
 test("bolt-react is a pure UXP port and does not write a WebView", () => {
   const out = path.join(temp, "bolt");
   const result = convertCep({ input: fixture("vanilla-js"), out, force: true, ui: "bolt-react" });
@@ -460,6 +481,9 @@ test("doc refresh extracts host ids without treating prose as an app id", () => 
   assert.ok(facts.apps.includes("premierepro"));
   assert.ok(facts.apps.includes("PS"));
   assert.equal(facts.apps.includes("Illustrator"), false);
+  const limits = extractDocFacts("text-transform is not supported. CSS Grid Layout is not available.");
+  assert.ok(limits.limits.includes("text-transform"));
+  assert.ok(limits.limits.includes("css-grid"));
   const merged = mergeDocFacts([
     { ok: true, facts },
     { ok: false, facts: { apps: ["AE"] } }
