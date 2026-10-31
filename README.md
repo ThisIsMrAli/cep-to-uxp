@@ -15,7 +15,7 @@ A loaded WebView is not a finished port. Buttons that still call `evalScript`, `
 The skill makes the agent follow one procedure:
 
 1. Confirm the folder contains `CSXS/manifest.xml`. Stop if it is already a UXP plugin.
-2. Refresh Adobe’s public UXP docs, then read the live summary. If a documented app id is missing from the skill, stop. Do not invent one.
+2. Refresh Adobe’s public UXP docs, including known issues, unsupported HTML, and the supported CSS list. Read the live summary. If a documented app id is missing from the skill, stop. Do not invent one.
 3. Scan the project. A `build/`, `dist/`, `out/`, or `release/` folder is a snapshot. Source next to it (`src/`, `app/`, Vue, Svelte, TSX, JSX, or a build script) is what gets read.
 4. Stop and ask which UI mode, which shell design, and which host. Do not pick them automatically. Suggest native UXP or bolt first. WebView is last resort.
 5. Write a new folder. Validate it until the checker prints `OK`.
@@ -127,7 +127,7 @@ If both a snapshot (`build/`, `dist/`) and source exist, retarget reads the sour
 | `PHXS`, `PHSP` | `PS` | 26.0.0 |
 | `IDSN` | `ID` | 20.0.0 |
 | `PPRO` | `premierepro` | 25.6.0 |
-| `AME` | `ame` | 25.0.0 |
+| `AME` | `ame` | 26.5.0 |
 
 `ame` is the id in Adobe’s shared manifest reference. If the UXP Developer Tool rejects it, change that one field to `mediaencoder`.
 

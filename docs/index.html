@@ -253,8 +253,8 @@
       <h1>CEP panels, carried into UXP.</h1>
       <p class="lede">
         An agent skill for Photoshop, InDesign, Premiere Pro, and Media Encoder.
-        It always asks which path to take. Native UXP or a Spectrum starter first. WebView last.
-        ExtendScript and Node move to the host.
+        It asks which path to take, then clones the panel into pure UXP.
+        WebView is only for keeping the old page. Every run refreshes Adobe’s current docs and limits.
       </p>
       <div class="actions">
         <a class="button primary" href="#install">Install the skill</a>
@@ -264,15 +264,15 @@
       <div class="dock" aria-label="How a converted panel is split">
         <section>
           <h2>Page</h2>
-          <p>React, Vue, Svelte, Angular, Solid, Lit, Alpine, TypeScript, or plain JavaScript. The component tree is not redrawn in Spectrum.</p>
+          <p>The CEP screens are cloned into the UXP document. Same labels, prompts, and controls. Spectrum restyles a control. It does not delete one.</p>
         </section>
         <section>
-          <h2>Bridge</h2>
-          <p><code>evalScript</code> crosses <code>postMessage</code>. The handler returns a string. A throw is delivered as text, not hidden.</p>
+          <h2>Calls</h2>
+          <p>ExtendScript and Node move to UXP handlers. A click that cannot run stays on screen and returns the old error.</p>
         </section>
         <section>
           <h2>Host</h2>
-          <p>Photoshop, InDesign, and Premiere APIs run in the UXP shell. JSXBIN is copied and never executed.</p>
+          <p>Photoshop, InDesign, Premiere, and Media Encoder APIs run in the host. JSX is copied and never executed.</p>
         </section>
       </div>
 
@@ -283,13 +283,12 @@
         </p>
         <ol class="steps">
           <li>Confirm <code>CSXS/manifest.xml</code>. Stop if the folder is already a UXP plugin.</li>
-          <li>Refresh Adobe’s public UXP docs. If a documented app id is missing from the skill, stop. Do not invent one.</li>
+          <li>Refresh Adobe’s UXP docs, including known issues, unsupported HTML, and the supported CSS list. Follow the limits on those live pages. If a documented app id is missing, stop.</li>
           <li>Scan source, not only the minified bundle. <code>build/</code> and <code>dist/</code> are snapshots.</li>
           <li>Ask which UI, design, and host. Suggest native UXP or bolt first. Do not pick automatically.</li>
-          <li>Write a new folder. Leave the CEP project untouched.</li>
-          <li>Validate until the checker prints <code>OK</code>.</li>
+          <li>Write a new folder. Leave the CEP project untouched. A bolt or native port has no WebView folder. Load that parent folder, not <code>bolt/</code>.</li>
+          <li>Clone the CEP screens. A missing label is not finished. A checker that prints <code>OK</code> does not mean a click survives.</li>
           <li>Tell every uncovered line in <code>MIGRATION.md</code> before calling the port finished.</li>
-          <li>When <code>RETARGET.md</code> exists, move readable host calls, rebuild, and load that bundle.</li>
         </ol>
       </section>
 
@@ -340,11 +339,11 @@
         <div class="split">
           <article>
             <h3><code>webview</code></h3>
-            <p>The usual result. A UXP shell hosts the existing page. The shim replaces <code>CSInterface.js</code>.</p>
+            <p>The old page needs a browser. That report is not a UI choice. A WebView is written only when the user picks <code>retarget</code> or <code>keep</code>.</p>
           </article>
           <article>
             <h3><code>hybrid</code></h3>
-            <p>The same shell. <code>child_process</code>, sockets, or a <code>.node</code> file were found. Those calls are listed. A native addon is not built.</p>
+            <p>A process, socket, or <code>.node</code> file was found. Those calls are listed. A native addon is not built, and this does not force a WebView.</p>
           </article>
           <article>
             <h3><code>native</code></h3>
@@ -361,8 +360,9 @@
         <h2>UI stacks</h2>
         <p>
           Plain JavaScript, TypeScript, React, Preact, Vue, Nuxt, Svelte, Angular, Solid, Lit, and Alpine.
-          Browser libraries such as jQuery, MUI, and Bootstrap stay in the page that already uses them.
-          The converter recognizes them from imports and <code>package.json</code>. It does not compile. Retarget names the project’s build script so the agent can.
+          On a pure UXP port, those screens are cloned into the UXP document.
+          A WebView keeps the built page only when that path was chosen.
+          The converter recognizes the stack from imports and <code>package.json</code>. It does not compile.
         </p>
       </section>
 
@@ -376,7 +376,7 @@
             <tr><td><code>PHXS</code>, <code>PHSP</code></td><td><code>PS</code></td><td>26.0.0</td></tr>
             <tr><td><code>IDSN</code></td><td><code>ID</code></td><td>20.0.0</td></tr>
             <tr><td><code>PPRO</code></td><td><code>premierepro</code></td><td>25.6.0</td></tr>
-            <tr><td><code>AME</code></td><td><code>ame</code></td><td>25.0.0</td></tr>
+            <tr><td><code>AME</code></td><td><code>ame</code></td><td>26.5.0</td></tr>
           </tbody>
         </table>
         <p>If the Developer Tool rejects <code>ame</code>, change that one field to <code>mediaencoder</code>. A packaged <code>.ccx</code> needs a single host object.</p>
@@ -385,10 +385,11 @@
       <section class="block" id="limits">
         <h2>What it will not pretend</h2>
         <ul class="limits">
-          <li>UXP cannot run JSX or JSXBIN. The shim only transports the script string.</li>
-          <li><code>path.join</code> and a throwing <code>fs</code> keep the first mount alive. They are not a filesystem.</li>
-          <li>In-memory <code>localStorage</code> is used only when the real one throws. Those values are not saved.</li>
-          <li>A Node preload is removed from the page. Loading it throws and blanks the panel.</li>
+          <li>Photoshop, InDesign, Premiere, and Media Encoder share one UXP document. It is not the CEP browser. The skill refreshes Adobe’s known-issues, unsupported HTML, and supported CSS pages on every run.</li>
+          <li>Those live pages currently omit CSS grid, <code>gap</code>, <code>text-transform</code>, the <code>font</code> shorthand, and CSS animations. Unitless sizes and a <code>select</code> value property are also called out. Lists and <code>aria*</code> are not supported as in a browser.</li>
+          <li>A compat script loads before the bundle on a pure UXP port. It covers document gaps seen in real panels, including missing observers and <code>currentColor</code>.</li>
+          <li>UXP cannot run JSX or JSXBIN. The handler returns the old error string.</li>
+          <li>In-memory <code>localStorage</code> is used only when the real one throws. CEP settings are not copied across.</li>
           <li>Servers, sockets, and <code>.node</code> addons are reported. They are not rewritten into JavaScript.</li>
         </ul>
       </section>
