@@ -323,7 +323,7 @@
 
       <section class="block" id="path">
         <h2>What the agent is required to do</h2>
-        <p class="intro">It is a procedure, not a one-shot copy. Cursor, Claude, Codex, and the other supported agents load the same folder.</p>
+        <p class="intro">It is a procedure, not a one-shot copy. Cursor, Claude Code, Codex, Gemini CLI, Windsurf, GitHub Copilot, Continue, and OpenCode can all load the same folder.</p>
         <ol class="steps">
           <li><strong>Refresh Adobe’s docs on this run.</strong> Known issues, unsupported HTML, and the supported CSS list are saved and followed. A new app id stops the port. None is invented.</li>
           <li><strong>Read the source, not only the built snapshot.</strong> Then stop and ask: UI, design, and host.</li>
@@ -401,10 +401,16 @@
       </section>
 
       <section class="block" id="install">
-        <h2>Install</h2>
-        <p class="intro">Node.js 18 or newer. In Cursor, Claude Code, or Codex:</p>
-        <pre><code>npx skills add ThisIsMrAli/cep-to-uxp --skill cep-to-uxp -a cursor</code></pre>
-        <p class="intro">Then run <code>/cep-to-uxp</code> on the folder that contains <code>CSXS/manifest.xml</code>. The agent will ask before it converts.</p>
+        <h2>Install it in the agent you already use</h2>
+        <p class="intro">Node.js 18 or newer. The same skill runs in Cursor, Claude Code, Codex, Gemini CLI, Windsurf, GitHub Copilot, Continue, and OpenCode. Change only the last flag:</p>
+        <pre><code>npx skills add ThisIsMrAli/cep-to-uxp --skill cep-to-uxp -a cursor
+npx skills add ThisIsMrAli/cep-to-uxp --skill cep-to-uxp -a claude-code
+npx skills add ThisIsMrAli/cep-to-uxp --skill cep-to-uxp -a codex</code></pre>
+        <p class="intro">Use <code>-a gemini-cli</code>, <code>-a windsurf</code>, <code>-a github-copilot</code>, <code>-a continue</code>, or <code>-a opencode</code> the same way. Add <code>-g</code> to install it for every project.</p>
+        <p class="intro">Then run <code>/cep-to-uxp</code> on the folder that contains <code>CSXS/manifest.xml</code>. The agent asks before it converts.</p>
+        <p class="intro">Claude Code can also load this repository as a plugin:</p>
+        <pre><code>/plugin marketplace add ThisIsMrAli/cep-to-uxp
+/plugin install cep-to-uxp@cep-to-uxp</code></pre>
         <p><a class="button primary" href="https://github.com/ThisIsMrAli/cep-to-uxp">GitHub</a></p>
       </section>
     </main>
