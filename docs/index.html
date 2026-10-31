@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CEP to UXP — convert Adobe CEP extensions to UXP plugins</title>
+    <title>CEP to UXP — carry an existing Adobe panel into UXP</title>
     <meta
       name="description"
-      content="Open-source agent skill that converts Adobe CEP and CSXS extensions into UXP plugins for Photoshop, InDesign, Premiere Pro, and Media Encoder. Prefers native UXP or a Spectrum starter. WebView is last resort."
+      content="Open-source agent skill that clones a CEP panel into a pure UXP plugin for Photoshop, InDesign, Premiere Pro, and Media Encoder. WebView is the last path. Every run reads Adobe’s current UXP limits."
     />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://thisismrali.github.io/cep-to-uxp/" />
@@ -14,28 +14,15 @@
     <meta property="og:title" content="CEP to UXP" />
     <meta
       property="og:description"
-      content="Convert legacy Adobe CEP extensions into UXP plugins. Prefer native UXP or Spectrum. WebView is last resort. ExtendScript and Node move to the host."
+      content="Clone a CEP panel into pure UXP. Same labels and controls. WebView only when the old page must stay."
     />
     <meta property="og:url" content="https://thisismrali.github.io/cep-to-uxp/" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="CEP to UXP" />
     <meta
       name="twitter:description"
-      content="Convert Adobe CEP extensions into UXP plugins for Photoshop, InDesign, Premiere Pro, and Media Encoder."
+      content="An agent skill that carries CEP panels into UXP for Photoshop, InDesign, Premiere Pro, and Media Encoder."
     />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareSourceCode",
-        "name": "CEP to UXP",
-        "description": "Agent skill that converts Adobe CEP extensions into UXP plugins for Photoshop, InDesign, Premiere Pro, and Media Encoder.",
-        "programmingLanguage": "JavaScript",
-        "license": "https://opensource.org/licenses/MIT",
-        "codeRepository": "https://github.com/ThisIsMrAli/cep-to-uxp",
-        "url": "https://thisismrali.github.io/cep-to-uxp/",
-        "keywords": "CEP, CSXS, UXP, Adobe, Photoshop, InDesign, Premiere Pro, Media Encoder, ExtendScript, WebView, agent skill"
-      }
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -46,9 +33,9 @@
       :root {
         --color-background: #0f172a;
         --color-foreground: #f8fafc;
-        --color-muted: #272f42;
         --color-muted-foreground: #cbd5e1;
-        --color-border: #475569;
+        --color-faint: #94a3b8;
+        --color-border: #334155;
         --color-accent: #22c55e;
         --color-on-accent: #0f172a;
         --color-card: #1b2336;
@@ -56,30 +43,25 @@
         --font-mono: "JetBrains Mono", ui-monospace, monospace;
         --header-height: 4.25rem;
         --measure: 68ch;
-        --space: 1.25rem;
       }
 
       * { box-sizing: border-box; }
-
       html { scroll-padding-top: calc(var(--header-height) + 1rem); }
-
       body {
         margin: 0;
-        background: var(--color-background);
+        background:
+          radial-gradient(ellipse 70% 40% at 10% -10%, rgba(34, 197, 94, 0.14), transparent 55%),
+          var(--color-background);
         color: var(--color-foreground);
         font-family: var(--font-sans);
         font-size: 1.0625rem;
         line-height: 1.6;
       }
-
-      a { color: var(--color-foreground); }
-      a:hover { color: var(--color-accent); }
-
+      a { color: inherit; }
       :focus-visible {
         outline: 2px solid var(--color-foreground);
         outline-offset: 3px;
       }
-
       .skip {
         position: absolute;
         left: 1rem;
@@ -102,23 +84,21 @@
         gap: 1rem;
         min-height: var(--header-height);
         padding: 0.75rem 1.5rem;
-        background: rgba(15, 23, 42, 0.94);
+        background: rgba(15, 23, 42, 0.92);
         border-bottom: 1px solid var(--color-border);
       }
-
       .mark {
         font-family: var(--font-mono);
         font-weight: 500;
         text-decoration: none;
         letter-spacing: -0.03em;
       }
-
-      nav { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; }
+      nav { display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; }
       nav a {
         display: inline-flex;
         align-items: center;
         min-height: 44px;
-        padding: 0 0.25rem;
+        padding: 0 0.4rem;
         text-decoration: none;
         color: var(--color-muted-foreground);
       }
@@ -127,68 +107,119 @@
       main {
         width: min(72rem, calc(100% - 2rem));
         margin: 0 auto;
-        padding: 3.5rem 0 5rem;
+        padding: 4.5rem 0 5rem;
       }
-
-      h1, h2, h3 { font-weight: 600; letter-spacing: -0.03em; line-height: 1.2; }
-      h1 { font-size: clamp(2.4rem, 5vw, 3.6rem); margin: 0 0 1rem; max-width: 16ch; }
-      h2 { font-size: 1.7rem; margin: 0 0 0.75rem; }
-      h3 { font-size: 1.15rem; margin: 0 0 0.4rem; }
-
+      h1, h2, h3 { font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+      h1 { font-size: clamp(2.6rem, 6vw, 4.4rem); margin: 0 0 1.1rem; max-width: 14ch; }
+      h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 0.8rem; }
+      h3 { font-size: 1.05rem; margin: 0 0 0.4rem; font-family: var(--font-mono); font-weight: 500; }
       p { max-width: var(--measure); }
-      .lede { font-size: 1.2rem; color: var(--color-muted-foreground); }
+      .kicker {
+        margin: 0 0 1rem;
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-accent);
+      }
+      .lede { font-size: 1.25rem; color: var(--color-muted-foreground); max-width: 42rem; }
 
-      .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.75rem 0 2.5rem; }
+      .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.75rem 0 0; }
       .button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         min-height: 44px;
-        padding: 0.6rem 1rem;
+        padding: 0.6rem 1.05rem;
         border-radius: 6px;
         text-decoration: none;
         font-weight: 500;
         cursor: pointer;
+        transition: filter 160ms ease, border-color 160ms ease;
       }
       .button.primary { background: var(--color-accent); color: var(--color-on-accent); }
-      .button.primary:hover { color: var(--color-on-accent); filter: brightness(1.08); }
+      .button.primary:hover { filter: brightness(1.08); }
       .button.quiet { border: 1px solid var(--color-border); color: var(--color-foreground); }
-      .button.quiet:hover { color: var(--color-foreground); border-color: var(--color-foreground); }
+      .button.quiet:hover { border-color: var(--color-foreground); }
 
-      .dock {
+      .hero {
         display: grid;
-        grid-template-columns: 1.2fr 0.8fr 1fr;
-        border: 1px solid var(--color-border);
-        background: var(--color-card);
-        margin: 0 0 4rem;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+        gap: 3rem;
+        align-items: end;
+        margin-bottom: 4.5rem;
       }
-      .dock section { padding: 1.25rem 1.35rem 1.4rem; }
-      .dock section + section { border-left: 1px solid var(--color-border); }
-      .dock h2 { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 500; }
-      .dock p { margin: 0; color: var(--color-muted-foreground); font-size: 0.98rem; }
+      .panel {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .panel header, .panel-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid var(--color-border);
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        color: var(--color-faint);
+      }
+      .panel-body { padding: 1rem; display: grid; gap: 0.6rem; }
+      .row {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        padding: 0.55rem 0.75rem;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        color: var(--color-muted-foreground);
+      }
+      .row strong { color: var(--color-foreground); font-weight: 500; }
+      .tag {
+        color: var(--color-accent);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+      }
 
-      section.block { margin: 0 0 3.5rem; }
-      section.block > p { color: var(--color-muted-foreground); }
+      section.block { margin: 0 0 4.25rem; }
+      .intro { color: var(--color-muted-foreground); }
 
-      ol.steps { padding-left: 1.2rem; max-width: var(--measure); }
-      ol.steps li { margin: 0.45rem 0; }
+      .grid3, .grid2 {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1.4rem;
+      }
+      .grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid2 { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); }
+      .card {
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        padding: 1.15rem 1.2rem 1.25rem;
+      }
+      .card p { margin: 0; color: var(--color-muted-foreground); }
+      .year {
+        font-family: var(--font-mono);
+        color: var(--color-accent);
+        font-size: 0.85rem;
+        margin: 0 0 0.35rem;
+      }
 
-      .modes, .hosts { width: 100%; border-collapse: collapse; }
-      .modes th, .modes td, .hosts th, .hosts td {
+      ol.steps { padding-left: 1.2rem; max-width: var(--measure); color: var(--color-muted-foreground); }
+      ol.steps li { margin: 0.55rem 0; }
+      ol.steps strong { color: var(--color-foreground); font-weight: 500; }
+
+      table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+      th, td {
         text-align: left;
         vertical-align: top;
-        padding: 0.85rem 0.9rem;
+        padding: 0.9rem 0.85rem;
         border-top: 1px solid var(--color-border);
       }
-      .modes th, .hosts th {
-        font-weight: 500;
-        color: var(--color-muted-foreground);
-        font-size: 0.92rem;
-      }
-      code, .mono {
-        font-family: var(--font-mono);
-        font-size: 0.86em;
-      }
+      th { color: var(--color-faint); font-weight: 500; font-size: 0.92rem; }
+      code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
       td code { color: var(--color-accent); }
 
       pre {
@@ -196,41 +227,33 @@
         padding: 1rem 1.1rem;
         background: var(--color-card);
         border: 1px solid var(--color-border);
+        border-radius: 10px;
         max-width: 100%;
       }
       pre code { color: var(--color-foreground); font-size: 0.9rem; }
 
-      .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 2rem; }
-      .split article {
-        border-top: 1px solid var(--color-border);
-        padding-top: 0.9rem;
-      }
-      .split p { margin: 0; color: var(--color-muted-foreground); }
-
-      ul.limits { max-width: var(--measure); padding-left: 1.15rem; }
-      ul.limits li { margin: 0.4rem 0; color: var(--color-muted-foreground); }
+      ul.limits { max-width: 46rem; padding-left: 1.15rem; }
+      ul.limits li { margin: 0.5rem 0; color: var(--color-muted-foreground); }
 
       footer {
         border-top: 1px solid var(--color-border);
         padding: 1.5rem;
-        color: var(--color-muted-foreground);
+        color: var(--color-faint);
         display: flex;
         justify-content: space-between;
         gap: 1rem;
         flex-wrap: wrap;
       }
-      footer a { color: var(--color-muted-foreground); }
+      footer a { color: var(--color-muted-foreground); min-height: 44px; display: inline-flex; align-items: center; }
 
-      @media (max-width: 800px) {
-        .dock, .split { grid-template-columns: 1fr; }
-        .dock section + section { border-left: 0; border-top: 1px solid var(--color-border); }
+      @media (max-width: 860px) {
+        .hero, .grid3, .grid2 { grid-template-columns: 1fr; }
         header { align-items: flex-start; flex-direction: column; }
-        .modes, .hosts { display: block; }
-        .modes thead, .hosts thead { display: none; }
-        .modes tr, .hosts tr { display: block; border-top: 1px solid var(--color-border); padding: 0.75rem 0; }
-        .modes td, .hosts td { display: block; border: 0; padding: 0.15rem 0; }
+        table, thead, tbody, tr, th, td { display: block; }
+        thead { display: none; }
+        tr { border-top: 1px solid var(--color-border); padding: 0.75rem 0; }
+        td { border: 0; padding: 0.15rem 0; }
       }
-
       @media (prefers-reduced-motion: reduce) {
         * { scroll-behavior: auto !important; transition: none !important; }
       }
@@ -241,174 +264,154 @@
     <header>
       <a class="mark" href="#content">cep-to-uxp</a>
       <nav aria-label="Page">
-        <a href="#agents">Agents</a>
+        <a href="#why">Why</a>
+        <a href="#path">Path</a>
         <a href="#modes">Modes</a>
-        <a href="#stacks">Stacks</a>
-        <a href="#hosts">Hosts</a>
         <a href="#limits">Limits</a>
         <a href="#install">Install</a>
       </nav>
     </header>
     <main id="content">
-      <h1>CEP panels, carried into UXP.</h1>
-      <p class="lede">
-        An agent skill for Photoshop, InDesign, Premiere Pro, and Media Encoder.
-        It asks which path to take, then clones the panel into pure UXP.
-        WebView is only for keeping the old page. Every run refreshes Adobe’s current docs and limits.
-      </p>
-      <div class="actions">
-        <a class="button primary" href="#install">Install the skill</a>
-        <a class="button quiet" href="#modes">See the modes</a>
-      </div>
+      <section class="hero">
+        <div>
+          <p class="kicker">Open-source agent skill</p>
+          <h1>The panel people already use, carried into UXP.</h1>
+          <p class="lede">
+            CEP to UXP clones an existing Adobe panel into a pure UXP plugin.
+            The labels, prompts, and controls stay. WebView is the last path, used only when the old page itself must remain.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="https://github.com/ThisIsMrAli/cep-to-uxp">View the source</a>
+            <a class="button quiet" href="#install">Install the skill</a>
+          </div>
+        </div>
+        <article class="panel" aria-label="What stays from the CEP panel">
+          <div class="panel-bar"><span>Same screen</span><span class="tag">UXP document</span></div>
+          <div class="panel-body">
+            <div class="row"><strong>Header actions</strong></div>
+            <div class="row"><strong>Suggestion prompts</strong></div>
+            <div class="row"><strong>Composer and menus</strong></div>
+            <p class="tag" style="margin:0.2rem 0 0">A click that UXP cannot run stays visible and returns the old error.</p>
+          </div>
+        </article>
+      </section>
 
-      <div class="dock" aria-label="How a converted panel is split">
-        <section>
-          <h2>Page</h2>
-          <p>The CEP screens are cloned into the UXP document. Same labels, prompts, and controls. Spectrum restyles a control. It does not delete one.</p>
-        </section>
-        <section>
-          <h2>Calls</h2>
-          <p>ExtendScript and Node move to UXP handlers. A click that cannot run stays on screen and returns the old error.</p>
-        </section>
-        <section>
-          <h2>Host</h2>
-          <p>Photoshop, InDesign, Premiere, and Media Encoder APIs run in the host. JSX is copied and never executed.</p>
-        </section>
-      </div>
-
-      <section class="block" id="agents">
-        <h2>What the agent is required to do</h2>
-        <p>
-          The skill is a procedure, not a one-shot copy. Cursor, Claude, Codex, Gemini, Windsurf, Continue, OpenCode, and GitHub Copilot can all load the same folder.
+      <section class="block" id="why">
+        <h2>Why this matters now</h2>
+        <p class="intro">
+          Adobe has already published the CEP sunset. Teams with shipping panels need a path that does not start from an empty Spectrum file.
+          This skill is that path: an agent reads the CEP project, asks which UI to build, and writes a UXP plugin beside it. The CEP project is not modified.
         </p>
-        <ol class="steps">
-          <li>Confirm <code>CSXS/manifest.xml</code>. Stop if the folder is already a UXP plugin.</li>
-          <li>Refresh Adobe’s UXP docs, including known issues, unsupported HTML, and the supported CSS list. Follow the limits on those live pages. If a documented app id is missing, stop.</li>
-          <li>Scan source, not only the minified bundle. <code>build/</code> and <code>dist/</code> are snapshots.</li>
-          <li>Ask which UI, design, and host. Suggest native UXP or bolt first. Do not pick automatically.</li>
-          <li>Write a new folder. Leave the CEP project untouched. A bolt or native port has no WebView folder. Load that parent folder, not <code>bolt/</code>.</li>
-          <li>Clone the CEP screens. A missing label is not finished. A checker that prints <code>OK</code> does not mean a click survives.</li>
-          <li>Tell every uncovered line in <code>MIGRATION.md</code> before calling the port finished.</li>
-        </ol>
-      </section>
-
-      <section class="block" id="modes">
-        <h2>UI modes</h2>
-        <p>Pass one with <code>--ui</code> after the user answers. Spectrum chrome on the shell is <code>--design spectrum</code>. <code>--design preserve</code> adds no new frame. Native and bolt are the suggested path. WebView is last resort.</p>
-        <table class="modes">
-          <thead>
-            <tr><th>Mode</th><th>Use it when</th><th>Result</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>native</code></td>
-              <td>Suggested for a small static or vanilla page.</td>
-              <td>No WebView. The CEP HTML is the UXP document. A leftover <code>new CSInterface()</code> throws.</td>
-            </tr>
-            <tr>
-              <td><code>bolt-react</code></td>
-              <td>Suggested for React and similar stacks.</td>
-              <td>Pure UXP document plus <code>bolt/cep-src/</code> to clone. No WebView folder. Dependencies are not installed.</td>
-            </tr>
-            <tr>
-              <td><code>bolt-vue</code></td>
-              <td>Suggested for Vue.</td>
-              <td>A Vue starter in <code>bolt/</code>.</td>
-            </tr>
-            <tr>
-              <td><code>bolt-svelte</code></td>
-              <td>Suggested for Svelte.</td>
-              <td>A Svelte starter in <code>bolt/</code>.</td>
-            </tr>
-            <tr>
-              <td><code>retarget</code></td>
-              <td>Last resort: keep the existing UI.</td>
-              <td>The current UI stays in the WebView. <code>ui-src/</code> and <code>RETARGET.md</code> separate ExtendScript and Node onto the host.</td>
-            </tr>
-            <tr>
-              <td><code>keep</code></td>
-              <td>Last resort: built panel only.</td>
-              <td>The page is copied into the WebView. Calls that still hit CEP or Node stay dead until they are moved.</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section class="block">
-        <h2>Strategies the scanner reports</h2>
-        <div class="split">
-          <article>
-            <h3><code>webview</code></h3>
-            <p>The old page needs a browser. That report is not a UI choice. A WebView is written only when the user picks <code>retarget</code> or <code>keep</code>.</p>
+        <div class="grid3">
+          <article class="card">
+            <p class="year">Photoshop</p>
+            <h3>March 2027</h3>
+            <p>New Marketplace CEP submissions stop. CEP is off by default in December 2027.</p>
           </article>
-          <article>
-            <h3><code>hybrid</code></h3>
-            <p>A process, socket, or <code>.node</code> file was found. Those calls are listed. A native addon is not built, and this does not force a WebView.</p>
+          <article class="card">
+            <p class="year">Premiere and InDesign</p>
+            <h3>2027–2028</h3>
+            <p>New CEP submissions stop in December 2027 and January 2028. CEP is off by default in December 2028.</p>
           </article>
-          <article>
-            <h3><code>native</code></h3>
-            <p>No framework, Node, or CEP bridge was found, so the HTML can be the UXP document.</p>
-          </article>
-          <article>
-            <h3><code>blocked</code></h3>
-            <p>Illustrator, After Effects, or any host with no documented UXP panel id. A report is written. No manifest app id is invented.</p>
+          <article class="card">
+            <p class="year">Flagship apps</p>
+            <h3>December 2029</h3>
+            <p>CEP leaves Photoshop, InDesign, and Premiere. ExtendScript files are a separate feature. CEP’s evalScript bridge is not.</p>
           </article>
         </div>
       </section>
 
-      <section class="block" id="stacks">
-        <h2>UI stacks</h2>
-        <p>
-          Plain JavaScript, TypeScript, React, Preact, Vue, Nuxt, Svelte, Angular, Solid, Lit, and Alpine.
-          On a pure UXP port, those screens are cloned into the UXP document.
-          A WebView keeps the built page only when that path was chosen.
-          The converter recognizes the stack from imports and <code>package.json</code>. It does not compile.
-        </p>
+      <section class="block" id="path">
+        <h2>What the agent is required to do</h2>
+        <p class="intro">It is a procedure, not a one-shot copy. Cursor, Claude, Codex, and the other supported agents load the same folder.</p>
+        <ol class="steps">
+          <li><strong>Refresh Adobe’s docs on this run.</strong> Known issues, unsupported HTML, and the supported CSS list are saved and followed. A new app id stops the port. None is invented.</li>
+          <li><strong>Read the source, not only the built snapshot.</strong> Then stop and ask: UI, design, and host.</li>
+          <li><strong>Clone the screens into pure UXP.</strong> Native HTML, or a bolt React, Vue, or Svelte port. Same regions and copy. A missing label is not finished.</li>
+          <li><strong>Move host work out of the page.</strong> Photoshop, InDesign, Premiere, and Media Encoder APIs run in the host. JSX is never executed.</li>
+          <li><strong>Load the parent folder</strong> in the UXP Developer Tool. A checker that prints OK does not mean a click survives.</li>
+        </ol>
+      </section>
+
+      <section class="block" id="modes">
+        <h2>Pure UXP first</h2>
+        <p class="intro">The agent recommends the first matching pure path. WebView is offered last, and only written if the user chooses it.</p>
+        <table>
+          <thead>
+            <tr><th>Mode</th><th>When</th><th>Result</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>native</code></td>
+              <td>A small static or vanilla page.</td>
+              <td>The HTML is the UXP document. No WebView.</td>
+            </tr>
+            <tr>
+              <td><code>bolt-react</code></td>
+              <td>React and similar component stacks.</td>
+              <td>A pure UXP document plus the CEP screens to clone. No WebView folder.</td>
+            </tr>
+            <tr>
+              <td><code>bolt-vue</code> / <code>bolt-svelte</code></td>
+              <td>Vue or Svelte.</td>
+              <td>The matching bolt starter, still a UXP document.</td>
+            </tr>
+            <tr>
+              <td><code>retarget</code> / <code>keep</code></td>
+              <td>Last resort. The old page must stay.</td>
+              <td>That page loads in a WebView. Host calls still move to UXP.</td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
       <section class="block" id="hosts">
         <h2>Hosts</h2>
-        <table class="hosts">
-          <thead>
-            <tr><th>CEP name</th><th>UXP app</th><th>Minimum</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>PHXS</code>, <code>PHSP</code></td><td><code>PS</code></td><td>26.0.0</td></tr>
-            <tr><td><code>IDSN</code></td><td><code>ID</code></td><td>20.0.0</td></tr>
-            <tr><td><code>PPRO</code></td><td><code>premierepro</code></td><td>25.6.0</td></tr>
-            <tr><td><code>AME</code></td><td><code>ame</code></td><td>26.5.0</td></tr>
-          </tbody>
-        </table>
-        <p>If the Developer Tool rejects <code>ame</code>, change that one field to <code>mediaencoder</code>. A packaged <code>.ccx</code> needs a single host object.</p>
+        <div class="grid2">
+          <div>
+            <table>
+              <thead>
+                <tr><th>CEP name</th><th>UXP app</th><th>Minimum</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>PHXS</code>, <code>PHSP</code></td><td><code>PS</code></td><td>26.0.0</td></tr>
+                <tr><td><code>IDSN</code></td><td><code>ID</code></td><td>20.0.0</td></tr>
+                <tr><td><code>PPRO</code></td><td><code>premierepro</code></td><td>25.6.0</td></tr>
+                <tr><td><code>AME</code></td><td><code>ame</code></td><td>26.5.0</td></tr>
+              </tbody>
+            </table>
+            <p class="intro">Illustrator and After Effects stay on CEP until a documented UXP panel id exists. A packaged plugin ships one host.</p>
+          </div>
+          <article class="card">
+            <h3>Live limits</h3>
+            <p>Before it writes files, the skill downloads Adobe’s current known-issues page, the unsupported HTML lists, and the supported CSS index. It follows the limits that are on those pages today.</p>
+          </article>
+        </div>
       </section>
 
       <section class="block" id="limits">
         <h2>What it will not pretend</h2>
         <ul class="limits">
-          <li>Photoshop, InDesign, Premiere, and Media Encoder share one UXP document. It is not the CEP browser. The skill refreshes Adobe’s known-issues, unsupported HTML, and supported CSS pages on every run.</li>
-          <li>Those live pages currently omit CSS grid, <code>gap</code>, <code>text-transform</code>, the <code>font</code> shorthand, and CSS animations. Unitless sizes and a <code>select</code> value property are also called out. Lists and <code>aria*</code> are not supported as in a browser.</li>
-          <li>A compat script loads before the bundle on a pure UXP port. It covers document gaps seen in real panels, including missing observers and <code>currentColor</code>.</li>
-          <li>UXP cannot run JSX or JSXBIN. The handler returns the old error string.</li>
-          <li>In-memory <code>localStorage</code> is used only when the real one throws. CEP settings are not copied across.</li>
-          <li>Servers, sockets, and <code>.node</code> addons are reported. They are not rewritten into JavaScript.</li>
+          <li>The UXP document is not the CEP browser. CSS grid, <code>gap</code>, <code>text-transform</code>, the <code>font</code> shorthand, and CSS animations are not in Adobe’s supported set.</li>
+          <li>A compat script loads first on a pure UXP port, for gaps real panels hit: observers, missing DOM constructors, and <code>currentColor</code>.</li>
+          <li>UXP cannot run JSX. The control stays, and the handler returns the old error.</li>
+          <li>Servers, sockets, and native addons are reported. They are not rewritten into JavaScript.</li>
+          <li><code>localStorage</code> on a plugin page does not keep CEP settings. The user enters them again.</li>
         </ul>
       </section>
 
       <section class="block" id="install">
         <h2>Install</h2>
-        <p>Node.js 18 or newer. From the skills CLI, for Cursor, Claude Code, or Codex:</p>
-        <pre><code>npx skills add &lt;owner&gt;/cep-to-uxp --skill cep-to-uxp -a cursor</code></pre>
-        <p>In Cursor, type <code>/cep-to-uxp</code> and give the folder that contains <code>CSXS/manifest.xml</code>.</p>
-        <pre><code>node .claude/skills/cep-to-uxp/scripts/convert.mjs \
-  --input /path/to/cep-extension \
-  --out /path/to/extension-uxp \
-  --force --ui bolt-react --design spectrum --host PS</code></pre>
+        <p class="intro">Node.js 18 or newer. In Cursor, Claude Code, or Codex:</p>
+        <pre><code>npx skills add ThisIsMrAli/cep-to-uxp --skill cep-to-uxp -a cursor</code></pre>
+        <p class="intro">Then run <code>/cep-to-uxp</code> on the folder that contains <code>CSXS/manifest.xml</code>. The agent will ask before it converts.</p>
+        <p><a class="button primary" href="https://github.com/ThisIsMrAli/cep-to-uxp">GitHub</a></p>
       </section>
     </main>
     <footer>
       <span>MIT license</span>
-      <a href="https://github.com/ThisIsMrAli/cep-to-uxp">GitHub</a>
-      <a href="https://developer.adobe.com/uxp/">Adobe UXP</a>
+      <a href="https://github.com/ThisIsMrAli/cep-to-uxp">Source</a>
+      <a href="https://developer.adobe.com/uxp/uxp-api/known-issues">UXP known issues</a>
       <a href="https://developer.adobe.com/photoshop/uxp/2022/guides/devtool/">UXP Developer Tool</a>
     </footer>
   </body>
