@@ -149,38 +149,38 @@
         align-items: end;
         margin-bottom: 4.5rem;
       }
-      .panel {
+      .features {
         background: var(--color-card);
         border: 1px solid var(--color-border);
         border-radius: 12px;
-        overflow: hidden;
+        padding: 0.35rem 1.1rem 0.5rem;
       }
-      .panel header, .panel-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.85rem 1rem;
-        border-bottom: 1px solid var(--color-border);
+      .features h2 {
         font-family: var(--font-mono);
         font-size: 0.82rem;
-        color: var(--color-faint);
-      }
-      .panel-body { padding: 1rem; display: grid; gap: 0.6rem; }
-      .row {
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-        padding: 0.55rem 0.75rem;
-        border: 1px solid var(--color-border);
-        border-radius: 8px;
-        color: var(--color-muted-foreground);
-      }
-      .row strong { color: var(--color-foreground); font-weight: 500; }
-      .tag {
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
         color: var(--color-accent);
+        margin: 0.85rem 0 0.2rem;
+      }
+      .features dl { margin: 0; }
+      .features div {
+        display: grid;
+        grid-template-columns: 7.5rem minmax(0, 1fr);
+        gap: 0.75rem;
+        padding: 0.8rem 0;
+        border-top: 1px solid var(--color-border);
+      }
+      .features dt {
+        margin: 0;
         font-family: var(--font-mono);
-        font-size: 0.75rem;
+        font-size: 0.82rem;
+        color: var(--color-foreground);
+      }
+      .features dd {
+        margin: 0;
+        color: var(--color-muted-foreground);
       }
 
       section.block { margin: 0 0 4.25rem; }
@@ -248,6 +248,7 @@
 
       @media (max-width: 860px) {
         .hero, .grid3, .grid2 { grid-template-columns: 1fr; }
+        .features div { grid-template-columns: 1fr; gap: 0.2rem; }
         header { align-items: flex-start; flex-direction: column; }
         table, thead, tbody, tr, th, td { display: block; }
         thead { display: none; }
@@ -285,14 +286,38 @@
             <a class="button quiet" href="#install">Install the skill</a>
           </div>
         </div>
-        <article class="panel" aria-label="What stays from the CEP panel">
-          <div class="panel-bar"><span>Same screen</span><span class="tag">UXP document</span></div>
-          <div class="panel-body">
-            <div class="row"><strong>Header actions</strong></div>
-            <div class="row"><strong>Suggestion prompts</strong></div>
-            <div class="row"><strong>Composer and menus</strong></div>
-            <p class="tag" style="margin:0.2rem 0 0">A click that UXP cannot run stays visible and returns the old error.</p>
-          </div>
+        <article class="features">
+          <h2>What it does</h2>
+          <dl>
+            <div>
+              <dt>Hosts</dt>
+              <dd>Photoshop, InDesign, Premiere Pro, and Media Encoder. One host per packaged plugin.</dd>
+            </div>
+            <div>
+              <dt>Source</dt>
+              <dd>JavaScript, TypeScript, React, Vue, Svelte, Angular, Solid, Lit, Alpine, and plain HTML.</dd>
+            </div>
+            <div>
+              <dt>Output</dt>
+              <dd>Native UXP, or a bolt React, Vue, or Svelte port. WebView only if you ask to keep the old page.</dd>
+            </div>
+            <div>
+              <dt>Docs</dt>
+              <dd>Refreshes Adobe’s UXP docs on every run and stops if a documented app id is missing.</dd>
+            </div>
+            <div>
+              <dt>Limits</dt>
+              <dd>Reads the current known issues, unsupported HTML, and supported CSS before it writes files.</dd>
+            </div>
+            <div>
+              <dt>Result</dt>
+              <dd>Clones the labels, prompts, and controls. A missing control is not a finished port.</dd>
+            </div>
+            <div>
+              <dt>Check</dt>
+              <dd>Validates the written plugin and compares the visible labels with the CEP screen.</dd>
+            </div>
+          </dl>
         </article>
       </section>
 
